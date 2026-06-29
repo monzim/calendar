@@ -59,7 +59,7 @@
     "dev": "tsdown --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "lint:pkg": "publint && attw --pack"
+    "lint:pkg": "publint && attw --pack --profile esm-only --exclude-entrypoints ./styles.css"
   },
   "peerDependencies": {
     "react": ">=18.3.0 <20.0.0",
