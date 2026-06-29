@@ -68,7 +68,10 @@
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
     "@radix-ui/react-avatar": "^1.1.10",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-slot": "^1.2.0",
+    "@radix-ui/react-toggle-group": "^1.1.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
@@ -80,6 +83,7 @@
     "@tailwindcss/cli": "^4.3.0",
     "publint": "^0.3.5",
     "tailwindcss": "^4.3.0",
-    "tsdown": "^0.22.0"
+    "tsdown": "^0.22.0",
+    "tw-animate-css": "^1.4.0"
   }
 }

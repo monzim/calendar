@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 /*
  * Scan this package's source so every utility class used in the components is
@@ -89,9 +90,29 @@
 .gcal-root {
   color: hsl(var(--gcal-foreground));
   background-color: hsl(var(--gcal-background));
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 .gcal-root *,
 .gcal-root *::before,
 .gcal-root *::after {
   border-color: hsl(var(--gcal-border));
+}
+
+/* Quiet, thin scrollbars inside scrollable calendar surfaces. */
+.gcal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--gcal-border)) transparent;
+}
+.gcal-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.gcal-scroll::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--gcal-border));
+  border-radius: 9999px;
+}
+.gcal-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }

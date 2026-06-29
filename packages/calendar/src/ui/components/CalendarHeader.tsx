@@ -2,8 +2,14 @@
 
 import type { CalendarViewType } from "../../core/types";
 import { Button } from "../primitives/button";
-import { cn } from "../lib/cn";
-import { ChevronLeft, ChevronRight, DownloadIcon } from "./icons";
+import { ToggleGroup, ToggleGroupItem } from "../primitives/toggle-group";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../primitives/dropdown-menu";
+import { ChevronDown, ChevronLeft, ChevronRight, DownloadIcon } from "./icons";
 
 const VIEW_LABELS: Record<CalendarViewType, string> = {
   today: "Today",
@@ -34,42 +40,72 @@ export function CalendarHeader({
   onExport,
 }: CalendarHeaderProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b p-3">
-      <div className="flex items-center gap-1">
-        <Button variant="outline" size="icon" onClick={onPrev} aria-label="Previous">
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={onNext} aria-label="Next">
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="sm" onClick={onToday}>
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-3 py-2.5 sm:px-4">
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="flex items-center rounded-lg border">
+          <button
+            type="button"
+            onClick={onPrev}
+            aria-label="Previous"
+            className="flex h-8 w-8 items-center justify-center rounded-l-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="h-5 w-px bg-border" />
+          <button
+            type="button"
+            onClick={onNext}
+            aria-label="Next"
+            className="flex h-8 w-8 items-center justify-center rounded-r-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+        <Button variant="outline" size="sm" onClick={onToday} className="hidden sm:inline-flex">
           Today
         </Button>
-        <h2 className="ml-2 text-base font-semibold tracking-tight">{label}</h2>
+        <h2 className="truncate text-sm font-semibold tracking-tight tabular-nums sm:text-base">
+          {label}
+        </h2>
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex items-center rounded-md border p-0.5">
+        {/* Desktop: segmented control */}
+        <ToggleGroup
+          type="single"
+          value={view}
+          onValueChange={(v) => v && onViewChange(v as CalendarViewType)}
+          className="hidden sm:inline-flex"
+        >
           {views.map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => onViewChange(v)}
-              className={cn(
-                "rounded px-2.5 py-1 text-xs font-medium transition-colors",
-                v === view
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
+            <ToggleGroupItem key={v} value={v} aria-label={VIEW_LABELS[v]}>
               {VIEW_LABELS[v]}
-            </button>
+            </ToggleGroupItem>
           ))}
+        </ToggleGroup>
+
+        {/* Mobile: dropdown */}
+        <div className="sm:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                {VIEW_LABELS[view]}
+                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {views.map((v) => (
+                <DropdownMenuItem key={v} onSelect={() => onViewChange(v)}>
+                  {VIEW_LABELS[v]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
         {onExport ? (
-          <Button variant="outline" size="sm" onClick={onExport}>
-            <DownloadIcon className="h-3.5 w-3.5" />
-            .ics
+          <Button variant="ghost" size="icon" onClick={onExport} aria-label="Export .ics" title="Export .ics">
+            <DownloadIcon className="h-4 w-4" />
           </Button>
         ) : null}
       </div>

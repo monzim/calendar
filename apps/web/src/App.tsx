@@ -43,16 +43,13 @@ export function App() {
           </button>
         </header>
 
-        <GoogleCalendarWeekly
-          events={events}
-          timeZone={TIME_ZONE}
-          weekStartsOn={0}
-          onEventClick={(occ) => alert(`${occ.event.title}\n${occ.event.location ?? ""}`)}
-        />
+        <GoogleCalendarWeekly events={events} timeZone={TIME_ZONE} weekStartsOn={0} />
 
         <footer className="text-center text-xs text-zinc-400">
-          Built with <code>@monzim/calendar</code> · drop in{" "}
-          <code>&lt;GoogleCalendarWeekly events=&#123;...&#125; /&gt;</code> and you&apos;re done.
+          Click any event for details &amp; one-click export · drop in{" "}
+          <code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-800">
+            &lt;GoogleCalendarWeekly events=&#123;...&#125; /&gt;
+          </code>
         </footer>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { addDays, format } from "date-fns";
 import { downloadICS } from "../core/ics";
 import { toDisplay } from "../core/timezone";
@@ -17,6 +17,7 @@ import { useNow } from "../react/useNow";
 import type { UseCalendarOptions } from "../react/types";
 import { CalendarHeader } from "./components/CalendarHeader";
 import { TimeGrid } from "./components/TimeGrid";
+import { EventDialog } from "./components/EventDialog";
 import { MonthView } from "./views/MonthView";
 import { cn } from "./lib/cn";
 
@@ -74,8 +75,23 @@ export function Calendar<TMeta = Record<string, unknown>>(props: CalendarProps<T
     ? () => downloadICS(calendarOptions.events as CalendarEvent[], exportFilename)
     : undefined;
 
+  // Built-in details dialog. A consumer `onEventClick` overrides it entirely.
+  const [selected, setSelected] = useState<EventOccurrence | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const handleEventClick = onEventClick
+    ? (onEventClick as (occ: EventOccurrence) => void)
+    : (occ: EventOccurrence) => {
+        setSelected(occ);
+        setDialogOpen(true);
+      };
+
   return (
-    <div className={cn("gcal-root flex w-full flex-col rounded-xl border bg-card text-card-foreground", className)}>
+    <div
+      className={cn(
+        "gcal-root flex w-full flex-col overflow-hidden rounded-xl border bg-card text-card-foreground",
+        className,
+      )}
+    >
       <CalendarHeader
         label={label}
         view={cal.view}
@@ -93,7 +109,7 @@ export function Calendar<TMeta = Record<string, unknown>>(props: CalendarProps<T
           monthDate={cal.currentDate}
           timeZone={cal.timeZone}
           now={now}
-          onEventClick={onEventClick}
+          onEventClick={handleEventClick}
         />
       ) : (
         <TimeGrid
@@ -102,7 +118,16 @@ export function Calendar<TMeta = Record<string, unknown>>(props: CalendarProps<T
           timeZone={cal.timeZone}
           now={now}
           nowIndicator={nowIndicator}
-          onEventClick={onEventClick}
+          onEventClick={handleEventClick}
+        />
+      )}
+
+      {onEventClick ? null : (
+        <EventDialog
+          occurrence={selected}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          timeZone={cal.timeZone}
         />
       )}
     </div>
