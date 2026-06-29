@@ -1,0 +1,118 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * Scan this package's source so every utility class used in the components is
+ * compiled into the shipped stylesheet — making `@monzim/calendar/styles.css`
+ * self-contained (works WITHOUT the consumer's Tailwind config).
+ */
+@source "./**/*.{ts,tsx}";
+
+/*
+ * Design tokens. Prefixed + scoped under `.gcal-root` so they never collide
+ * with the host app's own CSS variables. Override any of these by redefining
+ * `--gcal-*` on your `.gcal-root` (or a parent) to retheme the calendar.
+ * Palette ported from the original GoogleCalendarWeekly (amber primary).
+ */
+@layer base {
+  .gcal-root {
+    --gcal-background: 0 0% 100%;
+    --gcal-foreground: 20 14.3% 4.1%;
+    --gcal-card: 0 0% 100%;
+    --gcal-card-foreground: 20 14.3% 4.1%;
+    --gcal-popover: 0 0% 100%;
+    --gcal-popover-foreground: 20 14.3% 4.1%;
+    --gcal-primary: 47.9 95.8% 53.1%;
+    --gcal-primary-foreground: 26 83.3% 14.1%;
+    --gcal-secondary: 60 4.8% 95.9%;
+    --gcal-secondary-foreground: 24 9.8% 10%;
+    --gcal-muted: 60 4.8% 95.9%;
+    --gcal-muted-foreground: 25 5.3% 44.7%;
+    --gcal-accent: 60 4.8% 95.9%;
+    --gcal-accent-foreground: 24 9.8% 10%;
+    --gcal-destructive: 0 84.2% 60.2%;
+    --gcal-destructive-foreground: 60 9.1% 97.8%;
+    --gcal-border: 20 5.9% 90%;
+    --gcal-input: 20 5.9% 90%;
+    --gcal-ring: 20 14.3% 4.1%;
+    --gcal-radius: 0.75rem;
+  }
+
+  .dark .gcal-root,
+  .gcal-root.dark {
+    --gcal-background: 20 14.3% 4.1%;
+    --gcal-foreground: 60 9.1% 97.8%;
+    --gcal-card: 20 14.3% 4.1%;
+    --gcal-card-foreground: 60 9.1% 97.8%;
+    --gcal-popover: 20 14.3% 4.1%;
+    --gcal-popover-foreground: 60 9.1% 97.8%;
+    --gcal-primary: 47.9 95.8% 53.1%;
+    --gcal-primary-foreground: 26 83.3% 14.1%;
+    --gcal-secondary: 12 6.5% 15.1%;
+    --gcal-secondary-foreground: 60 9.1% 97.8%;
+    --gcal-muted: 12 6.5% 15.1%;
+    --gcal-muted-foreground: 24 5.4% 63.9%;
+    --gcal-accent: 12 6.5% 15.1%;
+    --gcal-accent-foreground: 60 9.1% 97.8%;
+    --gcal-destructive: 0 62.8% 30.6%;
+    --gcal-destructive-foreground: 60 9.1% 97.8%;
+    --gcal-border: 12 6.5% 15.1%;
+    --gcal-input: 12 6.5% 15.1%;
+    --gcal-ring: 35.5 91.7% 32.9%;
+  }
+}
+
+/* Map the scoped tokens onto Tailwind's color/utility namespace. */
+@theme inline {
+  --color-background: hsl(var(--gcal-background));
+  --color-foreground: hsl(var(--gcal-foreground));
+  --color-card: hsl(var(--gcal-card));
+  --color-card-foreground: hsl(var(--gcal-card-foreground));
+  --color-popover: hsl(var(--gcal-popover));
+  --color-popover-foreground: hsl(var(--gcal-popover-foreground));
+  --color-primary: hsl(var(--gcal-primary));
+  --color-primary-foreground: hsl(var(--gcal-primary-foreground));
+  --color-secondary: hsl(var(--gcal-secondary));
+  --color-secondary-foreground: hsl(var(--gcal-secondary-foreground));
+  --color-muted: hsl(var(--gcal-muted));
+  --color-muted-foreground: hsl(var(--gcal-muted-foreground));
+  --color-accent: hsl(var(--gcal-accent));
+  --color-accent-foreground: hsl(var(--gcal-accent-foreground));
+  --color-destructive: hsl(var(--gcal-destructive));
+  --color-destructive-foreground: hsl(var(--gcal-destructive-foreground));
+  --color-border: hsl(var(--gcal-border));
+  --color-input: hsl(var(--gcal-input));
+  --color-ring: hsl(var(--gcal-ring));
+  --radius: var(--gcal-radius);
+}
+
+/* Root container baseline. */
+.gcal-root {
+  color: hsl(var(--gcal-foreground));
+  background-color: hsl(var(--gcal-background));
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+.gcal-root *,
+.gcal-root *::before,
+.gcal-root *::after {
+  border-color: hsl(var(--gcal-border));
+}
+
+/* Quiet, thin scrollbars inside scrollable calendar surfaces. */
+.gcal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--gcal-border)) transparent;
+}
+.gcal-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.gcal-scroll::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--gcal-border));
+  border-radius: 9999px;
+}
+.gcal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
