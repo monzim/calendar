@@ -10,8 +10,11 @@ clinic hours — while still handling one-off events. Styled with Tailwind token
 drops straight into a modern shadcn app, and ships a self-contained stylesheet so it
 works **without** your Tailwind config too.
 
+**[▶ Live demo](https://monzim.github.io/calendar/)** · [GitHub](https://github.com/monzim/calendar) · MIT
+
 > Successor to the original `GoogleCalendarWeekly` weekly-routine component — now
-> generic, multi-view, recurrence-aware, and publishable.
+> generic, multi-view, recurrence-aware, and publishable. (`<GoogleCalendarWeekly>`
+> lives on as a week-first preset of `<Calendar>`.)
 
 ## Install
 
@@ -106,6 +109,56 @@ const back = parseICS(icsText);              // round-trips toICS()
 Apple Calendar has no URL scheme — the `.ics` download opens directly into it on
 macOS/iOS. Outlook's URL scheme has no reliable recurrence; use `.ics` for routines.
 
+## Using with AI coding agents
+
+Copy-paste rules for an LLM assistant integrating this package:
+
+1. **Package**: `@monzim/calendar`. Install it; peers are `react`/`react-dom` (>=18.3).
+2. **Always import the stylesheet once** at app entry: `import "@monzim/calendar/styles.css";`
+   — without it the calendar is unstyled.
+3. **One import does everything**: `import { GoogleCalendarWeekly } from "@monzim/calendar"`.
+   `<GoogleCalendarWeekly>` = `<Calendar defaultView="week">`. Use `<Calendar>` for other
+   default views. Pass `events: CalendarEvent[]`.
+4. **Two input shapes**, pick by use case:
+   - **One-off / dated events** → build `CalendarEvent` objects directly
+     (`{ title, start, end }`, ISO strings or `Date`; add `recurrence` to repeat).
+   - **Weekly routines / timetables** → build `RoutineInput` (`{ title, schedule: { Monday: { start: "09:00", end: "10:30" } } }`)
+     and convert with `fromRoutine(routines, { timeZone })`. Weekday keys accept
+     `"Monday"` or `"MO"`.
+5. **Timezones**: pass `timeZone="Area/City"` (IANA) on the component AND to `fromRoutine`
+   so display and recurrence agree. Omit only if everything is in the runtime-local zone.
+6. **People** go in `actors: [{ name, email?, avatarUrl?, role? }]`. **Domain data** goes in
+   typed `meta` (e.g. `CalendarEvent<{ courseCode: string }>`).
+7. **SSR / Next.js**: safe to render on the server; the now-indicator appears only after
+   mount (no hydration mismatch). The component is a client component.
+8. **Don't** hand-roll recurrence, overlap, ICS, or timezones — use the provided helpers
+   (`fromRoutine`, `toICS`, `parseICS`, `toGoogleCalendarUrl`, `toOutlookUrl`, `downloadICS`).
+9. Clicking an event opens a built-in details dialog (with Google/Outlook/.ics actions).
+   Pass `onEventClick` only to override that behaviour.
+
+Minimal, complete, working example:
+
+```tsx
+import { GoogleCalendarWeekly, fromRoutine, type CalendarEvent } from "@monzim/calendar";
+import "@monzim/calendar/styles.css";
+
+const events: CalendarEvent[] = fromRoutine(
+  [
+    {
+      title: "Machine Learning",
+      schedule: { Monday: { start: "09:30", end: "12:00" }, Wednesday: { start: "10:30", end: "12:30" } },
+      location: "Room 102",
+      actors: [{ name: "Dr. Emily Johnson" }],
+    },
+  ],
+  { timeZone: "Asia/Dhaka" },
+);
+
+export default function Schedule() {
+  return <GoogleCalendarWeekly events={events} timeZone="Asia/Dhaka" weekStartsOn={0} />;
+}
+```
+
 ## Layered entries (power users)
 
 The package is layered internally and tree-shakeable:
@@ -125,13 +178,16 @@ class on an ancestor.
 ## Development
 
 ```bash
+git clone https://github.com/monzim/calendar.git
+cd calendar
 pnpm install
 pnpm dev          # run the demo (apps/web)
 pnpm test         # engine + hydration tests
 pnpm --filter @monzim/calendar build
 ```
 
-Monorepo: `packages/calendar` (the library) + `apps/web` (the GitHub Pages demo).
+Monorepo: `packages/calendar` (the library) + `apps/web` (the demo, deployed to
+GitHub Pages at <https://monzim.github.io/calendar/>).
 
 ## License
 

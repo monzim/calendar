@@ -6,8 +6,8 @@ import tailwindcss from "@tailwindcss/vite";
 const pkg = (p: string) => fileURLToPath(new URL(`../../packages/calendar/${p}`, import.meta.url));
 
 export default defineConfig({
-  // GitHub Pages serves the demo from a subpath.
-  base: "/GoogleCalendarWeekly/",
+  // GitHub Pages serves the demo from a subpath (monzim.github.io/calendar/).
+  base: "/calendar/",
   plugins: [react(), tailwindcss()],
   resolve: {
     // Dogfood the library straight from source (instant HMR on lib edits), while

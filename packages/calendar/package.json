@@ -5,10 +5,10 @@
   "type": "module",
   "license": "MIT",
   "author": "Azraf Al Monzim",
-  "homepage": "https://github.com/monzim/GoogleCalendarWeekly",
+  "homepage": "https://github.com/monzim/calendar",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/monzim/GoogleCalendarWeekly.git"
+    "url": "git+https://github.com/monzim/calendar.git"
   },
   "keywords": [
     "react",
