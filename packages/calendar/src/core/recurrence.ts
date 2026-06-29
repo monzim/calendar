@@ -1,12 +1,10 @@
-// rrule ships CJS; a default-import + destructure is the interop form that
-// works under both bundlers and raw Node ESM (named imports fail in Node ESM).
-import rrulePkg, {
+import {
+  RRule,
+  RRuleSet,
+  rrulestr,
   type Options,
   type Weekday as RRuleWeekday,
-  type RRule as RRuleT,
-  type RRuleSet as RRuleSetT,
 } from "rrule";
-const { RRule, RRuleSet, rrulestr } = rrulePkg;
 import type {
   CalendarEvent,
   DateRange,
@@ -130,10 +128,10 @@ export function expandRecurrence<TMeta = Record<string, unknown>>(
   }
 
   const dtstart = toNaiveUTC(startInstant, zone);
-  let rule: RRuleT | RRuleSetT;
+  let rule: RRule | RRuleSet;
 
   if (typeof event.recurrence === "string") {
-    rule = rrulestr(event.recurrence, { dtstart }) as RRuleT;
+    rule = rrulestr(event.recurrence, { dtstart }) as RRule;
   } else {
     rule = new RRule(buildOptions(event.recurrence as RecurrenceRule, dtstart, zone));
   }
@@ -141,7 +139,7 @@ export function expandRecurrence<TMeta = Record<string, unknown>>(
   // EXDATE handling requires a set.
   if (event.exceptions?.length) {
     const set = new RRuleSet();
-    set.rrule(rule instanceof RRuleSet ? rule.rrules()[0]! : (rule as RRuleT));
+    set.rrule(rule instanceof RRuleSet ? rule.rrules()[0]! : (rule as RRule));
     for (const exc of event.exceptions) {
       set.exdate(toNaiveUTC(toInstant(exc, zone), zone));
     }

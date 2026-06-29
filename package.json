@@ -8,8 +8,8 @@
   },
   "scripts": {
     "build": "pnpm --filter @monzim/calendar build",
-    "build:demo": "pnpm --filter web build",
-    "dev": "pnpm --filter web dev",
+    "build:demo": "pnpm --filter @monzim/calendar build:css && pnpm --filter web build",
+    "dev": "pnpm --filter @monzim/calendar build:css && pnpm --filter web dev",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "pnpm -r typecheck",
