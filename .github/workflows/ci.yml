@@ -20,14 +20,16 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Build the library first so the demo's typecheck can resolve
+      # `@monzim/calendar` (its types + styles.css live in dist).
+      - name: Build library
+        run: pnpm --filter @monzim/calendar build
+
       - name: Typecheck
         run: pnpm -r typecheck
 
       - name: Test
         run: pnpm test
-
-      - name: Build library
-        run: pnpm --filter @monzim/calendar build
 
       - name: Lint package exports
         run: pnpm --filter @monzim/calendar lint:pkg
