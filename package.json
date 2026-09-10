@@ -23,6 +23,6 @@
     "@vitest/coverage-v8": "^4.1.0",
     "jsdom": "^25.0.1",
     "typescript": "^5.9.0",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.11"
   }
 }
