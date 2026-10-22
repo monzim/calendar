@@ -32,7 +32,7 @@ export interface EventDialogProps {
   /** Replace the whole dialog body. The dialog shell (overlay, close button, a11y title) stays. */
   renderContent?: (occurrence: EventOccurrence<any>, helpers: { close: () => void }) => ReactNode;
   /** Enables the "Ask AI" menu in the footer: builds the prompt for this occurrence. */
-  aiPrompt?: (occurrence: EventOccurrence<any>) => string;
+  aiPrompt?: (occurrence: EventOccurrence<any>, fits?: (prompt: string) => boolean) => string;
   aiProviders?: AIProvider[];
 }
 
@@ -141,7 +141,7 @@ export function EventDialog({
 
             <DialogFooter className="-mx-5 -mb-5 mt-1 items-center border-t bg-muted/40 px-5 py-3 sm:justify-between">
               {aiPrompt ? (
-                <AskAIMenu getPrompt={() => aiPrompt(occurrence)} providers={aiProviders} className="-ml-2" />
+                <AskAIMenu getPrompt={(fits) => aiPrompt(occurrence, fits)} providers={aiProviders} className="-ml-2" />
               ) : (
                 <span className="hidden text-xs font-medium text-muted-foreground sm:inline">Add to calendar</span>
               )}

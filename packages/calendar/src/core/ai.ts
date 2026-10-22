@@ -28,6 +28,8 @@ export interface MarkdownOptions {
   includePeople?: boolean;
   /** List days without events as "No events" so free days are explicit. Default true. */
   includeEmptyDays?: boolean;
+  /** Extra line under the heading (e.g. that later days were left out). */
+  note?: string;
 }
 
 function time(date: Date, tz?: TimeZone): string {
@@ -92,7 +94,7 @@ export function eventToMarkdown(occurrence: EventOccurrence<any>, options: Markd
 
 /** Markdown for already-bucketed days (what a view renders). */
 export function daysToMarkdown(days: DayBucket<any>[], options: MarkdownOptions = {}): string {
-  const { timeZone, title = "Schedule", now, includeEmptyDays = true } = options;
+  const { timeZone, title = "Schedule", now, includeEmptyDays = true, note } = options;
   const today = now ? toDisplay(now, timeZone) : null;
   const lines: string[] = [];
 
@@ -105,6 +107,7 @@ export function daysToMarkdown(days: DayBucket<any>[], options: MarkdownOptions 
     lines.push(`# ${title}`, "");
   }
   lines.push(`Times are in ${timeZone ?? "local time"}.`);
+  if (note) lines.push("", note);
 
   for (const day of days) {
     const local = toDisplay(day.date, timeZone);
@@ -147,6 +150,82 @@ export function buildAIPrompt(markdown: string, options: { instructions?: string
   return [instructions, "", markdown, ...(question ? ["", question] : [])].join("\n");
 }
 
+export interface AIPromptOptions extends MarkdownOptions {
+  instructions?: string;
+  question?: string;
+  /**
+   * Return false when a prompt is too long (e.g. for a chat URL). The prompt is
+   * then compacted step by step — descriptions, empty days and people go first,
+   * then trailing days (with a note saying so) — until it fits.
+   */
+  fits?: (prompt: string) => boolean;
+}
+
+/** Last resort: cut the text to the longest prefix that fits, marking the cut. */
+function truncateToFit(text: string, fits: (prompt: string) => boolean): string {
+  const marker = "\n…(truncated to fit)";
+  let lo = 0;
+  let hi = text.length;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if (fits(text.slice(0, mid) + marker)) lo = mid;
+    else hi = mid - 1;
+  }
+  return text.slice(0, lo) + marker;
+}
+
+// Progressively leaner renderings, tried in order.
+const COMPACT_TIERS: MarkdownOptions[] = [
+  {},
+  { includeDescriptions: false },
+  { includeDescriptions: false, includeEmptyDays: false },
+  { includeDescriptions: false, includeEmptyDays: false, includePeople: false },
+];
+
+/** Prompt for a run of days, compacted to satisfy `fits` when given. */
+export function daysToAIPrompt(days: DayBucket<any>[], options: AIPromptOptions = {}): string {
+  const { fits, instructions, question, ...markdown } = options;
+  const build = (subset: DayBucket<any>[], extra: MarkdownOptions) =>
+    buildAIPrompt(daysToMarkdown(subset, { ...markdown, ...extra }), { instructions, question });
+  if (!fits) return build(days, {});
+
+  for (const tier of COMPACT_TIERS) {
+    const prompt = build(days, tier);
+    if (fits(prompt)) return prompt;
+  }
+
+  // Keep the earliest days (what's coming up matters most) and say what's missing.
+  const lean = COMPACT_TIERS[COMPACT_TIERS.length - 1]!;
+  const withFirst = (n: number) => {
+    const last = toDisplay(days[n - 1]!.date, markdown.timeZone);
+    return build(days.slice(0, n), {
+      ...lean,
+      note: `_Only days through ${format(last, "EEE, MMM d")} are listed; later days were left out to fit._`,
+    });
+  };
+  let lo = 0;
+  let hi = days.length - 1;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if (fits(withFirst(mid))) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo > 0 ? withFirst(lo) : truncateToFit(build(days.slice(0, 1), lean), fits);
+}
+
+/** Prompt for one occurrence, compacted to satisfy `fits` when given. */
+export function eventToAIPrompt(occurrence: EventOccurrence<any>, options: AIPromptOptions = {}): string {
+  const { fits, instructions = DEFAULT_EVENT_AI_INSTRUCTIONS, question, ...markdown } = options;
+  const build = (extra: MarkdownOptions) =>
+    buildAIPrompt(eventToMarkdown(occurrence, { ...markdown, ...extra }), { instructions, question });
+  if (!fits) return build({});
+  for (const tier of [{}, { includeDescriptions: false }, { includeDescriptions: false, includePeople: false }]) {
+    const prompt = build(tier);
+    if (fits(prompt)) return prompt;
+  }
+  return truncateToFit(build({ includeDescriptions: false, includePeople: false }), fits);
+}
+
 /** A chat app that accepts a prefilled prompt via URL. */
 export interface AIProvider {
   id: string;
@@ -169,7 +248,7 @@ export const AI_PROVIDERS = {
 } satisfies Record<string, AIProvider>;
 
 /**
- * Longest prefilled URL we hand to a browser. Past this, browsers and chat apps
- * start truncating — callers should copy the prompt to the clipboard instead.
+ * Longest prefilled chat URL we produce. Longer links risk being cut by the
+ * chat app or proxies, so prompts are compacted to fit (see `AIPromptOptions.fits`).
  */
 export const MAX_AI_URL_LENGTH = 8000;

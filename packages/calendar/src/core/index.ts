@@ -58,11 +58,14 @@ export {
   daysToMarkdown,
   scheduleToMarkdown,
   buildAIPrompt,
+  daysToAIPrompt,
+  eventToAIPrompt,
   AI_PROVIDERS,
   DEFAULT_AI_INSTRUCTIONS,
   DEFAULT_EVENT_AI_INSTRUCTIONS,
   MAX_AI_URL_LENGTH,
   type MarkdownOptions,
+  type AIPromptOptions,
   type AIProvider,
 } from "./ai";
 

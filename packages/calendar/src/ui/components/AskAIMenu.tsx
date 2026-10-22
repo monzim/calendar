@@ -16,8 +16,12 @@ import { cn } from "../lib/cn";
 import { CopyIcon, ExternalLink, SparklesIcon } from "./icons";
 
 export interface AskAIMenuProps {
-  /** Built lazily on open/select so large schedules aren't serialized every render. */
-  getPrompt: () => string;
+  /**
+   * Built lazily on select so large schedules aren't serialized every render.
+   * When `fits` is passed (opening a chat), return a prompt that satisfies it —
+   * e.g. via `daysToAIPrompt` / `eventToAIPrompt`, which compact to fit.
+   */
+  getPrompt: (fits?: (prompt: string) => boolean) => string;
   providers: AIProvider[];
   /** Trigger text. Default "Ask AI". */
   label?: string;
@@ -26,16 +30,14 @@ export interface AskAIMenuProps {
   className?: string;
 }
 
-const PASTE_NOTE = "I've copied my calendar to the clipboard and will paste it in my next message.";
-
 function open(url: string) {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
 /**
  * "Ask AI" menu: copy the prompt (schedule as Markdown + instructions), or open a
- * chat app prefilled with it. Prompts too long for a URL are copied instead and
- * the chat opens with a note to paste — nothing is ever silently truncated.
+ * chat app with the prompt already in its URL. Long schedules are compacted to
+ * fit the link rather than handed off through the clipboard.
  */
 export function AskAIMenu({ getPrompt, providers, label = "Ask AI", variant = "button", className }: AskAIMenuProps) {
   const [status, setStatus] = useState<string | null>(null);
@@ -53,16 +55,8 @@ export function AskAIMenu({ getPrompt, providers, label = "Ask AI", variant = "b
   };
 
   const handleOpen = (provider: AIProvider) => {
-    const prompt = getPrompt();
-    const url = provider.url(prompt);
-    if (url.length <= MAX_AI_URL_LENGTH) {
-      open(url);
-      return;
-    }
-    // Start the copy and open the tab in the same click so popup blockers allow it.
-    const copied = copyText(prompt);
-    open(provider.url(PASTE_NOTE));
-    void copied.then((ok) => flash(ok ? `Copied — paste into ${provider.label}` : "Copy failed"));
+    const prompt = getPrompt((p) => provider.url(p).length <= MAX_AI_URL_LENGTH);
+    open(provider.url(prompt));
   };
 
   return (

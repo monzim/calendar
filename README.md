@@ -198,9 +198,12 @@ I free on Tuesday?", "do any classes clash?", or "plan my study week".
 
 It's **off by default** because using it sends calendar data to a third party. The
 Markdown carries only what's on screen — titles, times, places, people's names and roles —
-never ids, URLs, emails or avatar links. Prompts too long for a URL are copied instead,
-and the chat opens with a note to paste. Bring your own chat app with any
-`{ id, label, url: (prompt) => string }`. The pieces are exported for custom UIs:
+never ids, URLs, emails or avatar links. The schedule always travels **in the chat
+link itself** — no copy-paste step. When a long range (say, a busy month) would make the
+link too long, the prompt is compacted until it fits: descriptions go first, then empty
+days, then people, then later days (with a note telling the AI which days are listed).
+Bring your own chat app with any `{ id, label, url: (prompt) => string }`. The pieces are
+exported for custom UIs: `daysToAIPrompt` / `eventToAIPrompt` (with a `fits` check),
 `scheduleToMarkdown`, `daysToMarkdown`, `eventToMarkdown`, `buildAIPrompt`,
 `AI_PROVIDERS` (core) and `AskAIMenu`, `copyText` (ui).
 

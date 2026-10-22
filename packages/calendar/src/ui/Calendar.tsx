@@ -16,9 +16,8 @@ import type { GroupBy } from "../core/filter";
 import {
   AI_PROVIDERS,
   DEFAULT_EVENT_AI_INSTRUCTIONS,
-  buildAIPrompt,
-  daysToMarkdown,
-  eventToMarkdown,
+  daysToAIPrompt,
+  eventToAIPrompt,
   type AIProvider,
 } from "../core/ai";
 import type { ICSFeed } from "../core/feeds";
@@ -185,17 +184,17 @@ export function Calendar<TMeta = Record<string, unknown>>(props: CalendarProps<T
   const aiMenu = aiOptions ? (
     <AskAIMenu
       providers={aiProviders}
-      getPrompt={() =>
-        buildAIPrompt(daysToMarkdown(cal.days as DayBucket[], markdownOptions), {
-          instructions: aiOptions.instructions,
-        })
+      getPrompt={(fits) =>
+        daysToAIPrompt(cal.days as DayBucket[], { ...markdownOptions, instructions: aiOptions.instructions, fits })
       }
     />
   ) : null;
   const eventAIPrompt = aiOptions
-    ? (occ: EventOccurrence) =>
-        buildAIPrompt(eventToMarkdown(occ, markdownOptions), {
+    ? (occ: EventOccurrence, fits?: (prompt: string) => boolean) =>
+        eventToAIPrompt(occ, {
+          ...markdownOptions,
           instructions: aiOptions.eventInstructions ?? DEFAULT_EVENT_AI_INSTRUCTIONS,
+          fits,
         })
     : undefined;
 
