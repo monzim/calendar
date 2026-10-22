@@ -73,9 +73,22 @@ describe("fetchICS", () => {
       { fetch: fetchMock as unknown as typeof fetch },
     );
     expect(fetchMock).toHaveBeenCalledWith("https://example.com/team.ics", expect.anything());
-    expect(events[0]).toMatchObject({ id: "webcal://example.com/team.ics#weekly", calendarId: "Team", color: "#123456" });
+    expect(events[0]).toMatchObject({ calendarId: "Team", color: "#123456" });
+    expect(events[0]!.id).toMatch(/^feed-[0-9a-z]+#weekly$/);
     // An event's own COLOR wins over the feed color.
     expect(events[2]!.color).toBe("crimson");
+  });
+
+  it("never leaks the (possibly secret) feed URL into ids or errors", async () => {
+    const secret = "https://calendar.example.com/ical/me/private-s3cr3t/basic.ics?token=abc";
+    const ok = vi.fn(async () => new Response(FEED));
+    const events = await fetchICS(secret, { fetch: ok as unknown as typeof fetch });
+    for (const e of events) expect(e.id).not.toMatch(/s3cr3t|token|example/);
+
+    const fail = vi.fn(async () => new Response("", { status: 403, statusText: "Forbidden" }));
+    const err = await fetchICS(secret, { fetch: fail as unknown as typeof fetch }).catch((e: Error) => e);
+    expect(String(err)).toContain("https://calendar.example.com");
+    expect(String(err)).not.toMatch(/s3cr3t|token/);
   });
 
   it("throws on HTTP errors", async () => {
