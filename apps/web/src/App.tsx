@@ -1,8 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
-import { GoogleCalendarWeekly, fromRoutine, type CalendarEvent } from "@monzim/calendar";
-import { oneOffEvents, routines } from "./demo-data";
+import { GoogleCalendarWeekly, fromRoutine, type CalendarEvent, type ICSFeed } from "@monzim/calendar";
+import { oneOffEvents, routines, type CourseMeta } from "./demo-data";
 
 const TIME_ZONE = "Asia/Dhaka";
+
+// A same-origin .ics file standing in for a remote subscription (most public
+// feeds need a CORS proxy in the browser — see `feedOptions.fetch`).
+const FEEDS: ICSFeed[] = [
+  { url: `${import.meta.env.BASE_URL}feeds/academic-2026.ics`, calendarId: "Academic calendar", color: "#e11d48" },
+];
+
+// Legend: subscribed feeds by calendar, courses by instructor. Module-level so
+// the function identity is stable across renders.
+const groupBy = (event: CalendarEvent<CourseMeta>) =>
+  event.calendarId ?? event.actors?.filter((a) => a.role === "instructor").map((a) => a.name!);
+
+function CourseDetails({ meta }: { meta?: CourseMeta }) {
+  if (!meta?.courseCode) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 text-xs">
+      <span className="rounded-md bg-zinc-100 px-2 py-1 font-mono font-medium dark:bg-zinc-800">{meta.courseCode}</span>
+      {meta.roomId ? (
+        <span className="rounded-md bg-zinc-100 px-2 py-1 dark:bg-zinc-800">Room ID {meta.roomId}</span>
+      ) : null}
+    </div>
+  );
+}
 const INSTALL = "npm i @monzim/calendar";
 
 function useDarkMode() {
@@ -67,17 +90,19 @@ const FEATURES = [
   { title: "Routine-native", body: "Weekly schedules in, recurring events out — timetables, shifts, clinic hours." },
   { title: "Every view", body: "Today, day, week and month from one event model, with overlap packing." },
   { title: "One-click export", body: "Google, Outlook and .ics for a single event or the whole calendar." },
+  { title: "Filter legend", body: "Toggle calendars or people on and off. Alt-click a chip to show only that one." },
+  { title: "Live .ics feeds", body: "Subscribe to remote calendars; they merge in and refresh on an interval." },
+  { title: "Print & render slots", body: "Print a clean landscape timetable, or swap in your own event and dialog UI." },
 ];
 
 export function App() {
   const [dark, toggleDark] = useDarkMode();
 
-  const events = useMemo<CalendarEvent[]>(
-    () =>
-      [
-        ...fromRoutine(routines, { timeZone: TIME_ZONE, baseDate: "2026-01-04T00:00:00+06:00" }),
-        ...oneOffEvents,
-      ] as unknown as CalendarEvent[],
+  const events = useMemo<CalendarEvent<CourseMeta>[]>(
+    () => [
+      ...fromRoutine(routines, { timeZone: TIME_ZONE, baseDate: "2026-01-04T00:00:00+06:00" }),
+      ...(oneOffEvents as CalendarEvent<CourseMeta>[]),
+    ],
     [],
   );
 
@@ -120,7 +145,14 @@ export function App() {
           </div>
         </header>
 
-        <GoogleCalendarWeekly events={events} timeZone={TIME_ZONE} weekStartsOn={0} />
+        <GoogleCalendarWeekly
+          events={events}
+          timeZone={TIME_ZONE}
+          weekStartsOn={0}
+          legend={groupBy}
+          feeds={FEEDS}
+          renderEventDetails={(occ) => <CourseDetails meta={occ.event.meta} />}
+        />
 
         <section className="grid gap-3 sm:grid-cols-3">
           {FEATURES.map((f) => (

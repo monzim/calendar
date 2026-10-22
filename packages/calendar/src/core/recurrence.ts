@@ -104,6 +104,15 @@ function makeOccurrence<TMeta>(
   };
 }
 
+export interface ExpandOptions {
+  /**
+   * Zone for all-day events that don't set `timezone`. An all-day date has no
+   * zone of its own, so it should cover that date wherever it's displayed —
+   * pass the display zone. Defaults to the runtime-local zone.
+   */
+  allDayZone?: TimeZone;
+}
+
 /**
  * Expand a single event into concrete occurrences intersecting `range`.
  * Non-recurring events pass through (when they overlap); recurring events are
@@ -112,9 +121,10 @@ function makeOccurrence<TMeta>(
 export function expandRecurrence<TMeta = Record<string, unknown>>(
   event: CalendarEvent<TMeta>,
   range: DateRange,
+  options: ExpandOptions = {},
 ): EventOccurrence<TMeta>[] {
   const id = event.id ?? generateId();
-  const zone = event.timezone;
+  const zone = event.timezone ?? (event.allDay ? options.allDayZone : undefined);
   const startInstant = toInstant(event.start, zone);
   const endInstant = toInstant(event.end, zone);
   const durationMs = Math.max(0, endInstant.getTime() - startInstant.getTime());
@@ -158,8 +168,9 @@ export function expandRecurrence<TMeta = Record<string, unknown>>(
 export function expandAll<TMeta = Record<string, unknown>>(
   events: CalendarEvent<TMeta>[],
   range: DateRange,
+  options: ExpandOptions = {},
 ): EventOccurrence<TMeta>[] {
   return events
-    .flatMap((e) => expandRecurrence(e, range))
+    .flatMap((e) => expandRecurrence(e, range, options))
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 }

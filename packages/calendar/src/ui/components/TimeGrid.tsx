@@ -5,6 +5,7 @@ import { toDisplay } from "../../core/timezone";
 import type { DayBucket, GridConfig, PositionedOccurrence, TimeZone } from "../../core/types";
 import { cn } from "../lib/cn";
 import { eventStyle } from "../lib/eventStyle";
+import type { EventContentRenderer } from "../lib/render";
 import { EventCard } from "./EventCard";
 import { NowIndicator } from "./NowIndicator";
 
@@ -15,6 +16,7 @@ export interface TimeGridProps {
   now: Date | null;
   nowIndicator?: boolean;
   onEventClick?: (occurrence: PositionedOccurrence) => void;
+  renderEventContent?: EventContentRenderer<any>;
 }
 
 const GUTTER_PX = 56;
@@ -26,7 +28,15 @@ function hourLabel(hour: number): string {
   return `${h} ${suffix}`;
 }
 
-export function TimeGrid({ days, grid, timeZone, now, nowIndicator = true, onEventClick }: TimeGridProps) {
+export function TimeGrid({
+  days,
+  grid,
+  timeZone,
+  now,
+  nowIndicator = true,
+  onEventClick,
+  renderEventContent,
+}: TimeGridProps) {
   const { dayStartHour, dayEndHour, pxPerHour } = grid;
   const hours: number[] = [];
   for (let h = dayStartHour; h < dayEndHour; h++) hours.push(h);
@@ -89,7 +99,11 @@ export function TimeGrid({ days, grid, timeZone, now, nowIndicator = true, onEve
                       onEventClick && "cursor-pointer",
                     )}
                   >
-                    <span className="truncate">{occ.event.title}</span>
+                    {renderEventContent ? (
+                      renderEventContent(occ, { surface: "allDay", timeZone })
+                    ) : (
+                      <span className="truncate">{occ.event.title}</span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -134,7 +148,13 @@ export function TimeGrid({ days, grid, timeZone, now, nowIndicator = true, onEve
                   </div>
                 ))}
                 {day.occurrences.map((occ) => (
-                  <EventCard key={occ.occurrenceId} occurrence={occ} timeZone={timeZone} onEventClick={onEventClick} />
+                  <EventCard
+                    key={occ.occurrenceId}
+                    occurrence={occ}
+                    timeZone={timeZone}
+                    onEventClick={onEventClick}
+                    renderEventContent={renderEventContent}
+                  />
                 ))}
                 {nowIndicator && isToday ? <NowIndicator now={now} grid={grid} timeZone={timeZone} /> : null}
               </div>

@@ -1,15 +1,12 @@
 import type { CalendarEvent } from "./types";
-import { toInstant } from "./timezone";
+import { toCalendarDate, toInstant } from "./timezone";
 import { ruleToRRULEString } from "./internal-rrule";
 
 function pad(n: number, len = 2): string {
   return String(n).padStart(len, "0");
 }
 
-function gcalStamp(date: Date, allDay: boolean): string {
-  if (allDay) {
-    return `${pad(date.getUTCFullYear(), 4)}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}`;
-  }
+function gcalStamp(date: Date): string {
   return (
     `${pad(date.getUTCFullYear(), 4)}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}` +
     `T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`
@@ -23,14 +20,14 @@ function gcalStamp(date: Date, allDay: boolean): string {
 export function toGoogleCalendarUrl<TMeta = Record<string, unknown>>(
   event: CalendarEvent<TMeta>,
 ): string {
-  const allDay = event.allDay ?? false;
-  const start = toInstant(event.start, event.timezone);
-  const end = toInstant(event.end, event.timezone);
+  const dates = event.allDay
+    ? `${toCalendarDate(event.start, event.timezone).replace(/-/g, "")}/${toCalendarDate(event.end, event.timezone).replace(/-/g, "")}`
+    : `${gcalStamp(toInstant(event.start, event.timezone))}/${gcalStamp(toInstant(event.end, event.timezone))}`;
 
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: event.title,
-    dates: `${gcalStamp(start, allDay)}/${gcalStamp(end, allDay)}`,
+    dates,
   });
   if (event.description) params.set("details", event.description);
   if (event.location) params.set("location", event.location);
@@ -59,8 +56,8 @@ export function toOutlookUrl<TMeta = Record<string, unknown>>(
     path: "/calendar/action/compose",
     rru: "addevent",
     subject: event.title,
-    startdt: start.toISOString(),
-    enddt: end.toISOString(),
+    startdt: allDay ? toCalendarDate(event.start, event.timezone) : start.toISOString(),
+    enddt: allDay ? toCalendarDate(event.end, event.timezone) : end.toISOString(),
   });
   if (allDay) params.set("allday", "true");
   if (event.description) params.set("body", event.description);

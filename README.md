@@ -81,17 +81,99 @@ All views are on by default; switch via the header toggle or `defaultView`.
 | Prop | Default | Description |
 | --- | --- | --- |
 | `events` | — | `CalendarEvent[]` to render |
-| `defaultView` | `"week"` | `week` · `day` · `today` · `month` |
+| `defaultView` | `"week"` | `week` · `day` · `today` · `month` · `agenda` |
+| `views` | all five | which views the header toggle offers |
+| `agendaDays` | `14` | days listed by the agenda view (and the step for ‹ ›) |
 | `weekStartsOn` | `0` | 0 = Sunday … 6 = Saturday |
 | `visibleDays` | all 7 | subset of weekday indices (work-week, e.g. `[1,2,3,4,5]`) |
 | `grid` | `{ dayStartHour: 8, dayEndHour: 18, pxPerHour: 60 }` | visible hour window + row height |
 | `timeZone` | runtime | IANA zone for display + bucketing |
 | `nowIndicator` | `true` | current-time line in day/week |
 | `onEventClick` | — | `(occurrence) => void` |
-| `showExport` | `true` | `.ics` download button |
+| `showExport` | `true` | `.ics` download button (exports what's visible) |
+| `showPrint` | `true` | print button — see [Printing](#printing) |
+| `legend` | `false` | filter chips — see [Legend & filtering](#legend--filtering) |
+| `feeds` | — | remote `.ics` subscriptions — see [Remote feeds](#remote-ics-feeds) |
+| `renderEventContent` / `renderEventDetails` / `renderEventDialog` / `headerActions` | — | see [Custom rendering](#custom-rendering) |
 
 Overlapping events lane-pack automatically; the now-indicator is hydration-safe (it
 only appears after mount), so the component is SSR-safe on Next / Remix / TanStack Start.
+
+The **agenda** view is a chronological list grouped by day (empty days skipped) — the
+best default on phones and for "what's next" panels.
+
+## Legend & filtering
+
+Turn on `legend` to get a row of toggleable chips. Click toggles a group; Alt-click (or
+double-click) shows only that group; "Show all" resets. An event in several groups stays
+visible while any of them is on; events in no group are never hidden.
+
+```tsx
+<Calendar events={events} legend />                 // by calendarId
+<Calendar events={events} legend="actor" />         // by person (avatar chips)
+<Calendar events={events} legend={byCourse} />      // custom: (event) => key | key[] | null
+
+// Controlled, e.g. to persist in the URL:
+<Calendar events={events} legend hiddenGroups={hidden} onHiddenGroupsChange={setHidden} />
+```
+
+Define a custom `legend` function outside the component (or `useMemo` it) so it keeps a
+stable identity. Headless: `useEventFilter(events, { by })` returns `{ groups, events,
+toggle, solo, showAll, … }`, and `groupEvents` / `filterEvents` are pure core helpers.
+
+## Remote .ics feeds
+
+Subscribe to calendars published as iCalendar feeds; their events merge with `events`,
+pick up the legend, and refresh on an interval.
+
+```tsx
+<Calendar
+  events={events}
+  feeds={[
+    "https://example.com/holidays.ics",
+    { url: "webcal://example.com/team.ics", calendarId: "Team", color: "#0ea5e9" },
+  ]}
+  feedOptions={{ refreshInterval: 15 * 60_000 }}
+  legend
+/>
+```
+
+Feeds are fetched in the browser after mount. **Most public feeds (Google, Outlook) send
+no CORS headers**, so route them through your own endpoint with `feedOptions.fetch`
+(e.g. `(url, init) => fetch("/api/ics?url=" + encodeURIComponent(String(url)), init)`).
+A feed that fails is reported in `useICSFeed(...).errors` without dropping the others.
+Server-side, call `fetchICS(feed)` directly. The parser handles `VALARM` blocks, moved
+instances (`RECURRENCE-ID`), missing `DTEND`, quoted and non-IANA `TZID`s, and `COLOR`.
+
+## Custom rendering
+
+Keep the layout, swap the visuals:
+
+```tsx
+<Calendar<CourseMeta>
+  events={events}
+  // Inside every block / chip / row. The wrapper keeps positioning, tint and clicks.
+  renderEventContent={(occ, { surface, height }) =>
+    surface === "grid" && (height ?? 0) < 40
+      ? <b>{occ.event.meta?.courseCode}</b>
+      : <span>{occ.event.title} · {occ.event.meta?.courseCode}</span>}
+  // An extra section in the built-in dialog…
+  renderEventDetails={(occ) => <CourseBadge code={occ.event.meta?.courseCode} />}
+  // …or replace the dialog body entirely.
+  renderEventDialog={(occ, { close }) => <MyEventPanel occurrence={occ} onDone={close} />}
+  headerActions={<Button size="sm">Add class</Button>}
+/>
+```
+
+`surface` is `"grid"` (timed block in day/week), `"allDay"`, `"month"` or `"agenda"`.
+
+## Printing
+
+The print button prints **only the calendar** — not the rest of your page — on a
+landscape page, in the light theme, with event colors kept. Navigation, view switcher
+and legend are left out, a week that slightly overflows is shrunk onto one page, and the
+agenda paginates without splitting a day. Trigger it yourself with
+`printCalendar(element)` from `@monzim/calendar/ui`.
 
 ## Export & import
 
@@ -132,9 +214,13 @@ Copy-paste rules for an LLM assistant integrating this package:
 7. **SSR / Next.js**: safe to render on the server; the now-indicator appears only after
    mount (no hydration mismatch). The component is a client component.
 8. **Don't** hand-roll recurrence, overlap, ICS, or timezones — use the provided helpers
-   (`fromRoutine`, `toICS`, `parseICS`, `toGoogleCalendarUrl`, `toOutlookUrl`, `downloadICS`).
+   (`fromRoutine`, `toICS`, `parseICS`, `fetchICS`, `toGoogleCalendarUrl`, `toOutlookUrl`, `downloadICS`).
 9. Clicking an event opens a built-in details dialog (with Google/Outlook/.ics actions).
-   Pass `onEventClick` only to override that behaviour.
+   Pass `onEventClick` only to override that behaviour; prefer `renderEventDetails` /
+   `renderEventDialog` / `renderEventContent` to customise what's shown.
+10. **Filtering** = `legend` prop (`true` → by `calendarId`, `"actor"`, or a key function).
+    **Subscriptions** = `feeds` prop (needs a CORS proxy via `feedOptions.fetch` for most
+    public feeds). **Lists** = `defaultView="agenda"`. **Print** = built-in button.
 
 Minimal, complete, working example:
 
@@ -165,15 +251,17 @@ The package is layered internally and tree-shakeable:
 
 ```ts
 import { expandRecurrence, lanePack, buildView } from "@monzim/calendar/core";  // pure TS engine
-import { useCalendar, useNow } from "@monzim/calendar/react";                    // headless hooks
-import { Calendar, TimeGrid, EventCard } from "@monzim/calendar/ui";             // the skin
+import { useCalendar, useEventFilter, useICSFeed } from "@monzim/calendar/react"; // headless hooks
+import { Calendar, TimeGrid, AgendaView, CalendarLegend, printCalendar } from "@monzim/calendar/ui"; // the skin
 ```
 
 ## Theming
 
 Tokens are scoped CSS variables under `.gcal-root`. Override any `--gcal-*` to retheme;
 Tailwind v4 users can map them into their own `@theme`. Dark mode follows a `.dark`
-class on an ancestor.
+class on an ancestor. Event colors (`event.color`, any CSS color) feed a single
+`--gcal-event` variable from which the fill, accent bar and text are mixed, so they stay
+legible in both themes; tune the mix with `--gcal-event-fill` / `--gcal-event-ink`.
 
 ## Development
 

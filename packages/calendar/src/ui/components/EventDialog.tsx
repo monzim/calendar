@@ -25,6 +25,10 @@ export interface EventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   timeZone?: TimeZone;
+  /** Extra section rendered under the built-in details (course code, notes, links…). */
+  renderDetails?: (occurrence: EventOccurrence<any>) => ReactNode;
+  /** Replace the whole dialog body. The dialog shell (overlay, close button, a11y title) stays. */
+  renderContent?: (occurrence: EventOccurrence<any>, helpers: { close: () => void }) => ReactNode;
 }
 
 function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
@@ -40,8 +44,26 @@ function openUrl(url: string) {
   if (typeof window !== "undefined") window.open(url, "_blank", "noopener,noreferrer");
 }
 
-export function EventDialog({ occurrence, open, onOpenChange, timeZone }: EventDialogProps) {
+export function EventDialog({
+  occurrence,
+  open,
+  onOpenChange,
+  timeZone,
+  renderDetails,
+  renderContent,
+}: EventDialogProps) {
   const event = occurrence?.event as CalendarEvent | undefined;
+
+  if (renderContent) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent style={eventStyle(event?.color)}>
+          <DialogTitle className="sr-only">{event?.title ?? "Event"}</DialogTitle>
+          {occurrence ? renderContent(occurrence, { close: () => onOpenChange(false) }) : null}
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,6 +107,8 @@ export function EventDialog({ occurrence, open, onOpenChange, timeZone }: EventD
               {event.description ? (
                 <p className="text-sm leading-relaxed text-muted-foreground">{event.description}</p>
               ) : null}
+
+              {renderDetails ? <div className="min-w-0">{renderDetails(occurrence)}</div> : null}
 
               {event.actors?.length ? (
                 <div className="flex flex-col gap-2.5 border-t pt-4">

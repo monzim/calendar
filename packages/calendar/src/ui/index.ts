@@ -10,6 +10,12 @@ export { EventCard, type EventCardProps } from "./components/EventCard";
 export { EventDialog, type EventDialogProps } from "./components/EventDialog";
 export { NowIndicator, type NowIndicatorProps } from "./components/NowIndicator";
 export { MonthView, type MonthViewProps } from "./views/MonthView";
+export { AgendaView, type AgendaViewProps } from "./views/AgendaView";
+export { CalendarLegend, type CalendarLegendProps } from "./components/CalendarLegend";
+
+// Helpers for custom rendering and printing.
+export type { EventContentRenderer, EventRenderContext } from "./lib/render";
+export { printCalendar } from "./lib/print";
 
 // Vendored shadcn primitives.
 export { Avatar, AvatarImage, AvatarFallback } from "./primitives/avatar";

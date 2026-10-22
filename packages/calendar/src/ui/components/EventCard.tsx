@@ -7,11 +7,14 @@ import type { PositionedOccurrence, TimeZone } from "../../core/types";
 import { Avatar, AvatarFallback, AvatarImage } from "../primitives/avatar";
 import { cn } from "../lib/cn";
 import { eventStyle } from "../lib/eventStyle";
+import type { EventContentRenderer } from "../lib/render";
 
 export interface EventCardProps {
   occurrence: PositionedOccurrence;
   timeZone?: TimeZone;
   onEventClick?: (occurrence: PositionedOccurrence) => void;
+  /** Replace the block's content; positioning, tint and click handling stay. */
+  renderEventContent?: EventContentRenderer<any>;
 }
 
 function fmt(date: Date, tz?: TimeZone): string {
@@ -24,7 +27,7 @@ const GAP = 2; // px inset from the column edges
 // titles stay readable, and later lanes stack on top of earlier ones.
 const SPREAD = 1.7;
 
-export function EventCard({ occurrence, timeZone, onEventClick }: EventCardProps) {
+export function EventCard({ occurrence, timeZone, onEventClick, renderEventContent }: EventCardProps) {
   const { event, top, height, lane, laneCount } = occurrence;
   const slot = 100 / laneCount;
   const leftPct = lane * slot;
@@ -57,7 +60,9 @@ export function EventCard({ occurrence, timeZone, onEventClick }: EventCardProps
         interactive && "cursor-pointer",
       )}
     >
-      {inline ? (
+      {renderEventContent ? (
+        renderEventContent(occurrence, { surface: "grid", height, timeZone })
+      ) : inline ? (
         <span className="flex min-w-0 items-baseline gap-1.5 text-xs leading-tight">
           <span className="truncate font-semibold">{event.title}</span>
           <span className="gcal-event-subtle shrink-0 text-[0.6875rem] tabular-nums">
@@ -76,7 +81,7 @@ export function EventCard({ occurrence, timeZone, onEventClick }: EventCardProps
         </>
       )}
 
-      {roomy && actor ? (
+      {!renderEventContent && roomy && actor ? (
         <span className="mt-auto flex min-w-0 items-center gap-1.5 pt-1">
           <Avatar className="h-4 w-4 ring-1 ring-card">
             {actor.avatarUrl ? <AvatarImage src={actor.avatarUrl} alt={actor.name ?? ""} /> : null}

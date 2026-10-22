@@ -21,6 +21,8 @@ export interface UseCalendarOptions<TMeta = Record<string, unknown>> {
   timeZone?: TimeZone;
   /** Partial grid geometry; merged over the 8–18 / 60px defaults. */
   grid?: Partial<GridConfig>;
+  /** Number of days the agenda view lists (and steps by). Default 14. */
+  agendaDays?: number;
 }
 
 export interface UseCalendarReturn<TMeta = Record<string, unknown>> {

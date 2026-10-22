@@ -15,14 +15,26 @@
 export * from "./core";
 
 // Headless hooks
-export { useCalendar, useNow, CalendarProvider, useCalendarContext } from "./react";
+export {
+  useCalendar,
+  useNow,
+  useEventFilter,
+  useICSFeed,
+  CalendarProvider,
+  useCalendarContext,
+} from "./react";
 export type {
   WeekStart,
   UseCalendarOptions,
   UseCalendarReturn,
+  UseEventFilterOptions,
+  UseEventFilterReturn,
+  UseICSFeedOptions,
+  UseICSFeedReturn,
+  ICSFeedError,
   CalendarProviderProps,
 } from "./react";
 
 // Batteries-included UI
-export { Calendar, GoogleCalendarWeekly } from "./ui";
-export type { CalendarProps } from "./ui";
+export { Calendar, GoogleCalendarWeekly, CalendarLegend, printCalendar } from "./ui";
+export type { CalendarProps, EventContentRenderer, EventRenderContext } from "./ui";

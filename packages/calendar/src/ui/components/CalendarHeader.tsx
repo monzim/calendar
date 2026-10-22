@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { CalendarViewType } from "../../core/types";
 import { Button } from "../primitives/button";
 import { ToggleGroup, ToggleGroupItem } from "../primitives/toggle-group";
@@ -9,13 +10,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../primitives/dropdown-menu";
-import { ChevronDown, ChevronLeft, ChevronRight, DownloadIcon } from "./icons";
+import { ChevronDown, ChevronLeft, ChevronRight, DownloadIcon, PrinterIcon } from "./icons";
 
 const VIEW_LABELS: Record<CalendarViewType, string> = {
   today: "Today",
   day: "Day",
   week: "Week",
   month: "Month",
+  agenda: "Agenda",
 };
 
 export interface CalendarHeaderProps {
@@ -27,6 +29,9 @@ export interface CalendarHeaderProps {
   onNext: () => void;
   onToday: () => void;
   onExport?: () => void;
+  onPrint?: () => void;
+  /** Extra controls rendered before the built-in action buttons. */
+  actions?: ReactNode;
 }
 
 export function CalendarHeader({
@@ -38,14 +43,16 @@ export function CalendarHeader({
   onNext,
   onToday,
   onExport,
+  onPrint,
+  actions,
 }: CalendarHeaderProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-3 py-3 sm:px-4">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-3 py-3 sm:px-4 print:py-2">
       <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
-        <Button variant="outline" size="sm" onClick={onToday} className="hidden px-3.5 sm:inline-flex">
+        <Button variant="outline" size="sm" onClick={onToday} className="gcal-print-hide hidden px-3.5 sm:inline-flex">
           Today
         </Button>
-        <div className="flex items-center">
+        <div className="gcal-print-hide flex items-center">
           <Button variant="ghost" size="icon" onClick={onPrev} aria-label="Previous" className="rounded-full text-muted-foreground hover:text-foreground">
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -58,7 +65,8 @@ export function CalendarHeader({
         </h2>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="gcal-print-hide flex items-center gap-2">
+        {actions}
         {/* Desktop: segmented control */}
         <ToggleGroup
           type="single"
@@ -92,6 +100,18 @@ export function CalendarHeader({
           </DropdownMenu>
         </div>
 
+        {onPrint ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onPrint}
+            aria-label="Print"
+            title="Print"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <PrinterIcon className="h-4 w-4" />
+          </Button>
+        ) : null}
         {onExport ? (
           <Button
             variant="ghost"

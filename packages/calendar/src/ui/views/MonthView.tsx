@@ -5,6 +5,7 @@ import { toDisplay } from "../../core/timezone";
 import type { DayBucket, EventOccurrence, PositionedOccurrence, TimeZone } from "../../core/types";
 import { cn } from "../lib/cn";
 import { eventStyle } from "../lib/eventStyle";
+import type { EventContentRenderer } from "../lib/render";
 
 export interface MonthViewProps {
   days: DayBucket[];
@@ -12,6 +13,7 @@ export interface MonthViewProps {
   timeZone?: TimeZone;
   now: Date | null;
   onEventClick?: (occurrence: PositionedOccurrence | EventOccurrence) => void;
+  renderEventContent?: EventContentRenderer<any>;
 }
 
 const MAX_CHIPS = 3;
@@ -21,7 +23,7 @@ function chipTime(date: Date, tz?: TimeZone): string {
   return format(local, local.getMinutes() === 0 ? "h a" : "h:mm a").replace(" ", "").toLowerCase();
 }
 
-export function MonthView({ days, monthDate, timeZone, now, onEventClick }: MonthViewProps) {
+export function MonthView({ days, monthDate, timeZone, now, onEventClick, renderEventContent }: MonthViewProps) {
   const today = now ? toDisplay(now, timeZone) : null;
   const monthLocal = toDisplay(monthDate, timeZone);
   const weekdayHeader = days.slice(0, 7);
@@ -84,15 +86,23 @@ export function MonthView({ days, monthDate, timeZone, now, onEventClick }: Mont
                       !inMonth && "opacity-60",
                     )}
                   >
-                    {occ.allDay ? null : (
-                      <span aria-hidden className="gcal-event-dot h-2 w-2 shrink-0 rounded-full" />
+                    {renderEventContent ? (
+                      renderEventContent(occ, { surface: "month", timeZone })
+                    ) : (
+                      <>
+                        {occ.allDay ? null : (
+                          <span aria-hidden className="gcal-event-dot h-2 w-2 shrink-0 rounded-full" />
+                        )}
+                        {occ.allDay ? null : (
+                          <span className="shrink-0 tabular-nums text-muted-foreground">
+                            {chipTime(occ.start, timeZone)}
+                          </span>
+                        )}
+                        <span className={cn("truncate", !occ.allDay && "font-medium text-foreground/90")}>
+                          {occ.event.title}
+                        </span>
+                      </>
                     )}
-                    {occ.allDay ? null : (
-                      <span className="shrink-0 tabular-nums text-muted-foreground">{chipTime(occ.start, timeZone)}</span>
-                    )}
-                    <span className={cn("truncate", !occ.allDay && "font-medium text-foreground/90")}>
-                      {occ.event.title}
-                    </span>
                   </button>
                 ))}
                 {overflow > 0 ? (

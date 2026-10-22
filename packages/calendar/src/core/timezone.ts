@@ -35,6 +35,12 @@ export function toInstant(value: ISODateTime | Date, timezone?: TimeZone): Date 
       );
     }
   }
+  // `new Date("2026-10-24")` would be UTC midnight (JS spec quirk); a floating
+  // date is local midnight like every other floating value.
+  if (!hasOffset(value)) {
+    const m = FLOATING_RE.exec(value.trim());
+    if (m && m[4] === undefined) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
   return new Date(value);
 }
 
@@ -51,4 +57,16 @@ export function toDisplay(instant: Date, displayZone?: TimeZone): Date {
 export function minutesSinceMidnight(instant: Date, displayZone?: TimeZone): number {
   const d = toDisplay(instant, displayZone);
   return d.getHours() * 60 + d.getMinutes();
+}
+
+/**
+ * The calendar date ("YYYY-MM-DD") an all-day value refers to. A date-only
+ * string is returned as-is; anything else is read as a wall-clock date in `zone`
+ * (runtime-local when unset).
+ */
+export function toCalendarDate(value: ISODateTime | Date, zone?: TimeZone): string {
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return value.trim();
+  const local = toDisplay(toInstant(value, zone), zone);
+  const pad = (n: number, len = 2) => String(n).padStart(len, "0");
+  return `${pad(local.getFullYear(), 4)}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}`;
 }
