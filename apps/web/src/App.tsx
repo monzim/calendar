@@ -1,55 +1,238 @@
 import { useEffect, useMemo, useState } from "react";
-import { GoogleCalendarWeekly, fromRoutine, type CalendarEvent } from "@monzim/calendar";
-import { oneOffEvents, routines } from "./demo-data";
+import { GoogleCalendarWeekly, fromRoutine, type CalendarEvent, type ICSFeed } from "@monzim/calendar";
+import { AI_PROVIDERS } from "@monzim/calendar/core";
+import { copyText } from "@monzim/calendar/ui";
+import { oneOffEvents, routines, type CourseMeta } from "./demo-data";
 
 const TIME_ZONE = "Asia/Dhaka";
 
+// A same-origin .ics file standing in for a remote subscription (most public
+// feeds need a CORS proxy in the browser — see `feedOptions.fetch`).
+const FEEDS: ICSFeed[] = [
+  { url: `${import.meta.env.BASE_URL}feeds/academic-2026.ics`, calendarId: "Academic calendar", color: "#e11d48" },
+];
+
+// Legend: subscribed feeds by calendar, courses by instructor. Module-level so
+// the function identity is stable across renders.
+const groupBy = (event: CalendarEvent<CourseMeta>) =>
+  event.calendarId ?? event.actors?.filter((a) => a.role === "instructor").map((a) => a.name!);
+
+function CourseDetails({ meta }: { meta?: CourseMeta }) {
+  if (!meta?.courseCode) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 text-xs">
+      <span className="rounded-md bg-zinc-100 px-2 py-1 font-mono font-medium dark:bg-zinc-800">{meta.courseCode}</span>
+      {meta.roomId ? (
+        <span className="rounded-md bg-zinc-100 px-2 py-1 dark:bg-zinc-800">Room ID {meta.roomId}</span>
+      ) : null}
+    </div>
+  );
+}
+const INSTALL = "npm i @monzim/calendar";
+
 function useDarkMode() {
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches,
+  );
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
   return [dark, () => setDark((d) => !d)] as const;
 }
 
+function Logo() {
+  return (
+    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-400 text-amber-950 shadow-sm">
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+        <rect x="3.5" y="5" width="17" height="15" rx="3" />
+        <path d="M3.5 10h17M8 3v4M16 3v4" />
+        <path d="M8 14h3" />
+      </svg>
+    </span>
+  );
+}
+
+function ThemeIcon({ dark }: { dark: boolean }) {
+  return dark ? (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+      <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
+    </svg>
+  );
+}
+
+function InstallPill() {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    void navigator.clipboard?.writeText(INSTALL).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="group inline-flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-[0.8125rem] shadow-xs transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+    >
+      <span className="text-zinc-400">$</span>
+      <span>{INSTALL}</span>
+      <span className="font-sans text-xs text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300">
+        {copied ? "Copied" : "Copy"}
+      </span>
+    </button>
+  );
+}
+
+// Public URL, so chat apps can fetch it (they can't reach localhost in dev).
+const LLMS_FULL_URL = "https://monzim.github.io/calendar/llms-full.txt";
+const AGENT_PROMPT =
+  `I'm building a React app with the @monzim/calendar package. Read its full guide at ${LLMS_FULL_URL} ` +
+  "and follow its rules for coding agents. Then help me integrate it — ask me what I'm building first.";
+
+function UseWithAI() {
+  // Preload the guide so "Copy" can write to the clipboard inside the click.
+  const [guide, setGuide] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}llms-full.txt`)
+      .then((r) => (r.ok ? r.text() : null))
+      .then(setGuide)
+      .catch(() => setGuide(null));
+  }, []);
+
+  const copy = () => {
+    const text = guide
+      ? `You're helping me use the @monzim/calendar React package. Here is its full guide:\n\n${guide}`
+      : AGENT_PROMPT;
+    void copyText(text).then((ok) => {
+      setCopied(ok);
+      if (ok) setTimeout(() => setCopied(false), 1800);
+    });
+  };
+  const open = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
+
+  const button =
+    "inline-flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium shadow-xs transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800";
+
+  return (
+    <section className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:bg-zinc-900/60">
+      <div>
+        <h2 className="text-sm font-semibold">Build with AI</h2>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          Hand the full integration guide to your coding assistant. Also at{" "}
+          <a className="underline underline-offset-2" href={`${import.meta.env.BASE_URL}llms.txt`}>
+            /llms.txt
+          </a>
+          .
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={copy} className={button}>
+          {copied ? "Copied" : "Copy guide for AI"}
+        </button>
+        <button type="button" onClick={() => open(AI_PROVIDERS.chatgpt.url(AGENT_PROMPT))} className={button}>
+          Open in ChatGPT
+        </button>
+        <button type="button" onClick={() => open(AI_PROVIDERS.claude.url(AGENT_PROMPT))} className={button}>
+          Open in Claude
+        </button>
+      </div>
+    </section>
+  );
+}
+
+const FEATURES = [
+  { title: "Routine-native", body: "Weekly schedules in, recurring events out — timetables, shifts, clinic hours." },
+  { title: "Every view", body: "Today, day, week and month from one event model, with overlap packing." },
+  { title: "One-click export", body: "Google, Outlook and .ics for a single event or the whole calendar." },
+  { title: "Filter legend", body: "Toggle calendars or people on and off. Alt-click a chip to show only that one." },
+  { title: "Live .ics feeds", body: "Subscribe to remote calendars; they merge in and refresh on an interval." },
+  { title: "Print & render slots", body: "Print a clean landscape timetable, or swap in your own event and dialog UI." },
+  { title: "Ask AI", body: "Copy the visible schedule as Markdown, or open it in ChatGPT or Claude to plan around it." },
+  { title: "Agenda view", body: "A day-grouped list of what's coming up — the best default on phones." },
+];
+
 export function App() {
   const [dark, toggleDark] = useDarkMode();
 
-  const events = useMemo<CalendarEvent[]>(
-    () =>
-      [
-        ...fromRoutine(routines, { timeZone: TIME_ZONE, baseDate: "2026-01-04T00:00:00+06:00" }),
-        ...oneOffEvents,
-      ] as unknown as CalendarEvent[],
+  const events = useMemo<CalendarEvent<CourseMeta>[]>(
+    () => [
+      ...fromRoutine(routines, { timeZone: TIME_ZONE, baseDate: "2026-01-04T00:00:00+06:00" }),
+      ...(oneOffEvents as CalendarEvent<CourseMeta>[]),
+    ],
     [],
   );
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">@monzim/calendar</h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Routine-native React calendar — one event model, every view, one-click export.
-            </p>
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-50">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-6 sm:py-8">
+        <nav className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Logo />
+            <span className="font-semibold tracking-tight">@monzim/calendar</span>
           </div>
-          <button
-            type="button"
-            onClick={toggleDark}
-            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-          >
-            {dark ? "Light" : "Dark"} mode
-          </button>
+          <div className="flex items-center gap-1">
+            <a
+              href="https://github.com/monzim/calendar"
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-200/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+            >
+              GitHub
+            </a>
+            <button
+              type="button"
+              onClick={toggleDark}
+              aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+            >
+              <ThemeIcon dark={dark} />
+            </button>
+          </div>
+        </nav>
+
+        <header className="flex flex-col gap-4">
+          <h1 className="max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+            A React calendar built around routines.
+          </h1>
+          <p className="max-w-2xl text-pretty text-zinc-600 dark:text-zinc-400">
+            One event model, every view, correct recurrence and timezones — with one-click export to Google,
+            Apple and Outlook. Drops into any shadcn / Tailwind app, or works standalone.
+          </p>
+          <div>
+            <InstallPill />
+          </div>
         </header>
 
-        <GoogleCalendarWeekly events={events} timeZone={TIME_ZONE} weekStartsOn={0} />
+        <GoogleCalendarWeekly
+          events={events}
+          timeZone={TIME_ZONE}
+          weekStartsOn={0}
+          legend={groupBy}
+          feeds={FEEDS}
+          renderEventDetails={(occ) => <CourseDetails meta={occ.event.meta} />}
+          ai
+        />
 
-        <footer className="text-center text-xs text-zinc-400">
-          Click any event for details &amp; one-click export · drop in{" "}
-          <code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-800">
-            &lt;GoogleCalendarWeekly events=&#123;...&#125; /&gt;
-          </code>
+        <UseWithAI />
+
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {FEATURES.map((f) => (
+            <div
+              key={f.title}
+              className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/60"
+            >
+              <h3 className="text-sm font-semibold">{f.title}</h3>
+              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{f.body}</p>
+            </div>
+          ))}
+        </section>
+
+        <footer className="border-t border-zinc-200 pt-6 text-center text-xs text-zinc-500 dark:border-zinc-800">
+          Click any event for details &amp; export · MIT licensed
         </footer>
       </div>
     </div>

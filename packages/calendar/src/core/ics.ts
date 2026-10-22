@@ -3,10 +3,11 @@ import type {
   CalendarEvent,
   ISODateTime,
   RecurrenceRule,
+  TimeZone,
   Weekday,
 } from "./types";
 import { generateId } from "./helpers";
-import { toInstant } from "./timezone";
+import { toCalendarDate, toInstant } from "./timezone";
 import { ruleToRRULEString } from "./internal-rrule";
 
 const WEEKDAYS: Weekday[] = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
@@ -24,9 +25,9 @@ function formatUTC(date: Date): string {
   );
 }
 
-/** Instant -> "YYYYMMDD" (UTC date parts, for all-day VALUE=DATE). */
-function formatDateOnly(date: Date): string {
-  return `${pad(date.getUTCFullYear(), 4)}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}`;
+/** All-day value -> "YYYYMMDD" for VALUE=DATE. */
+function formatDateOnly(value: ISODateTime | Date, zone?: TimeZone): string {
+  return toCalendarDate(value, zone).replace(/-/g, "");
 }
 
 /** Escape RFC-5545 TEXT values. */
@@ -87,8 +88,8 @@ export function toICS<TMeta = Record<string, unknown>>(
     lines.push(`DTSTAMP:${now}`);
 
     if (event.allDay) {
-      lines.push(`DTSTART;VALUE=DATE:${formatDateOnly(startInstant)}`);
-      lines.push(`DTEND;VALUE=DATE:${formatDateOnly(endInstant)}`);
+      lines.push(`DTSTART;VALUE=DATE:${formatDateOnly(event.start, event.timezone)}`);
+      lines.push(`DTEND;VALUE=DATE:${formatDateOnly(event.end, event.timezone)}`);
     } else {
       lines.push(`DTSTART:${formatUTC(startInstant)}`);
       lines.push(`DTEND:${formatUTC(endInstant)}`);
@@ -130,7 +131,9 @@ function icsToISO(value: string, tzid?: string): ISODateTime {
   }
   const floating = `${y}-${mo}-${d}T${h}:${mi}:${s}`;
   if (z) return new Date(`${floating}Z`).toISOString();
-  return toInstant(floating, tzid).toISOString();
+  const instant = toInstant(floating, tzid);
+  // Unknown TZIDs (e.g. Windows zone names from Outlook) → keep it floating.
+  return Number.isNaN(instant.getTime()) ? floating : instant.toISOString();
 }
 
 function parseRRULE(value: string): RecurrenceRule {
@@ -176,8 +179,8 @@ function splitLine(line: string): { name: string; params: Map<string, string>; v
   const [name, ...paramParts] = head.split(";");
   const params = new Map<string, string>();
   for (const p of paramParts) {
-    const [k, v] = p.split("=");
-    if (k && v) params.set(k.toUpperCase(), v);
+    const eq = p.indexOf("=");
+    if (eq > 0) params.set(p.slice(0, eq).toUpperCase(), p.slice(eq + 1).replace(/^"(.*)"$/, "$1"));
   }
   return { name: name!.toUpperCase(), params, value };
 }
@@ -189,9 +192,13 @@ export function parseICS(text: string): CalendarEvent[] {
   const lines = unfolded.split(/\r\n|\n|\r/);
 
   const events: CalendarEvent[] = [];
+  // Modified instances of a recurring event (RECURRENCE-ID): uid -> original starts.
+  const overridden = new Map<string, ISODateTime[]>();
   let current: Partial<CalendarEvent> | null = null;
   let actors: Actor[] = [];
   let exceptions: ISODateTime[] = [];
+  // Depth of components nested inside the VEVENT (VALARM…) whose props we skip.
+  let nested = 0;
 
   for (const raw of lines) {
     if (!raw) continue;
@@ -199,18 +206,31 @@ export function parseICS(text: string): CalendarEvent[] {
       current = { title: "" };
       actors = [];
       exceptions = [];
+      nested = 0;
       continue;
     }
     if (raw === "END:VEVENT") {
-      if (current) {
+      if (current?.start) {
         if (actors.length) current.actors = actors;
         if (exceptions.length) current.exceptions = exceptions;
+        // RFC 5545: no DTEND → one day for all-day events, zero-length otherwise.
+        // Parsed starts are always strings (icsToISO).
+        current.end ??= current.allDay ? defaultAllDayEnd(current.start as ISODateTime) : current.start;
         events.push(current as CalendarEvent);
       }
       current = null;
       continue;
     }
     if (!current) continue;
+    if (raw.startsWith("BEGIN:")) {
+      nested += 1;
+      continue;
+    }
+    if (raw.startsWith("END:")) {
+      nested = Math.max(0, nested - 1);
+      continue;
+    }
+    if (nested > 0) continue;
 
     const { name, params, value } = splitLine(raw);
     switch (name) {
@@ -228,6 +248,18 @@ export function parseICS(text: string): CalendarEvent[] {
         break;
       case "URL":
         current.url = value;
+        break;
+      case "COLOR":
+        current.color = value;
+        break;
+      case "RECURRENCE-ID":
+        if (current.id) {
+          const list = overridden.get(current.id) ?? [];
+          list.push(icsToISO(value, params.get("TZID")));
+          overridden.set(current.id, list);
+          // The override is a standalone one-off; keep ids unique.
+          current.id = `${current.id}__${value}`;
+        }
         break;
       case "DTSTART":
         current.start = icsToISO(value, params.get("TZID"));
@@ -254,7 +286,21 @@ export function parseICS(text: string): CalendarEvent[] {
     }
   }
 
+  // A moved/edited instance replaces its original slot in the series.
+  if (overridden.size) {
+    for (const event of events) {
+      const extra = event.id && event.recurrence ? overridden.get(event.id) : undefined;
+      if (extra) event.exceptions = [...(event.exceptions ?? []), ...extra];
+    }
+  }
+
   return events;
+}
+
+function defaultAllDayEnd(start: ISODateTime): ISODateTime {
+  const d = new Date(`${start.slice(0, 10)}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
 }
 
 /** Browser helper: trigger a download of the events as an .ics file. */

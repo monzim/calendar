@@ -30,14 +30,44 @@ export {
 } from "./helpers";
 
 // Engine
-export { expandRecurrence, expandAll } from "./recurrence";
+export { expandRecurrence, expandAll, type ExpandOptions } from "./recurrence";
 export { lanePack, type PackedOccurrence } from "./lanePack";
 export { positionOccurrences } from "./position";
 export { buildView, type BuildViewOptions, type BuildViewResult } from "./pipeline";
-export { toInstant, toDisplay, minutesSinceMidnight } from "./timezone";
+export { toInstant, toDisplay, minutesSinceMidnight, toCalendarDate } from "./timezone";
 
 // Adapters
 export { fromRoutine, type FromRoutineOptions } from "./fromRoutine";
+
+// Grouping / filtering (legend)
+export {
+  groupEvents,
+  filterEvents,
+  eventGroupKeys,
+  type GroupBy,
+  type EventGroup,
+} from "./filter";
+
+// Remote feeds
+export { fetchICS, normalizeFeedUrl, type ICSFeed, type FetchICSOptions } from "./feeds";
+
+// AI handoff (Markdown schedule + chat deep links)
+export {
+  occurrenceToMarkdown,
+  eventToMarkdown,
+  daysToMarkdown,
+  scheduleToMarkdown,
+  buildAIPrompt,
+  daysToAIPrompt,
+  eventToAIPrompt,
+  AI_PROVIDERS,
+  DEFAULT_AI_INSTRUCTIONS,
+  DEFAULT_EVENT_AI_INSTRUCTIONS,
+  MAX_AI_URL_LENGTH,
+  type MarkdownOptions,
+  type AIPromptOptions,
+  type AIProvider,
+} from "./ai";
 
 // Export / import
 export { toICS, parseICS, downloadICS } from "./ics";

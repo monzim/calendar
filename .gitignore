@@ -8,3 +8,8 @@ coverage
 .DS_Store
 *.local
 *.tsbuildinfo
+
+# Copied from the repo root by `prepack` so the npm tarball ships them.
+packages/calendar/README.md
+packages/calendar/LICENSE
+packages/calendar/CHANGELOG.md

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildView } from "../pipeline";
+import { toDisplay, toInstant } from "../timezone";
 import type { CalendarEvent, GridConfig } from "../types";
 
 const grid: GridConfig = { dayStartHour: 8, dayEndHour: 18, pxPerHour: 60 };
@@ -45,4 +46,20 @@ describe("buildView", () => {
     expect(days[3]!.allDay).toHaveLength(0); // Jan 8 (end exclusive)
     expect(days[1]!.occurrences).toHaveLength(0);
   });
+});
+
+describe("all-day dates without a timezone", () => {
+  const event = { id: "due", title: "Due", start: "2026-10-23", end: "2026-10-24", allDay: true };
+  for (const zone of ["Asia/Dhaka", "America/Los_Angeles", "UTC"]) {
+    it(`cover exactly their own date when displayed in ${zone}`, () => {
+      const start = toInstant("2026-10-21T00:00:00", zone);
+      const { days } = buildView([event], {
+        range: { start, end: new Date(start.getTime() + 5 * 86_400_000) },
+        grid: { dayStartHour: 8, dayEndHour: 18, pxPerHour: 60 },
+        timeZone: zone,
+      });
+      const covered = days.filter((d) => d.allDay.length > 0).map((d) => toDisplay(d.date, zone).getDate());
+      expect(covered).toEqual([23]);
+    });
+  }
 });

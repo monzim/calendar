@@ -6,76 +6,89 @@ import { toDisplay } from "../../core/timezone";
 import type { PositionedOccurrence, TimeZone } from "../../core/types";
 import { Avatar, AvatarFallback, AvatarImage } from "../primitives/avatar";
 import { cn } from "../lib/cn";
+import { eventStyle } from "../lib/eventStyle";
+import type { EventContentRenderer } from "../lib/render";
 
 export interface EventCardProps {
   occurrence: PositionedOccurrence;
   timeZone?: TimeZone;
   onEventClick?: (occurrence: PositionedOccurrence) => void;
+  /** Replace the block's content; positioning, tint and click handling stay. */
+  renderEventContent?: EventContentRenderer<any>;
 }
 
 function fmt(date: Date, tz?: TimeZone): string {
-  return format(toDisplay(date, tz), "h:mm");
+  const local = toDisplay(date, tz);
+  return format(local, local.getMinutes() === 0 ? "h a" : "h:mm a");
 }
 
-const GAP = 3; // px between side-by-side lanes
+const GAP = 2; // px inset from the column edges
+// Overlapping lanes cascade (Google-style): each block spreads past its slot so
+// titles stay readable, and later lanes stack on top of earlier ones.
+const SPREAD = 1.7;
 
-export function EventCard({ occurrence, timeZone, onEventClick }: EventCardProps) {
+export function EventCard({ occurrence, timeZone, onEventClick, renderEventContent }: EventCardProps) {
   const { event, top, height, lane, laneCount } = occurrence;
-  const widthPct = 100 / laneCount;
+  const slot = 100 / laneCount;
+  const leftPct = lane * slot;
+  const widthPct = lane === laneCount - 1 ? slot : Math.min(slot * SPREAD, 100 - leftPct);
   const interactive = !!onEventClick;
 
   // Density tiers — drop detail as the block shrinks.
-  const compact = height < 46;
-  const roomy = height >= 72;
+  const inline = height < 40;
+  const roomy = height >= 76;
+  const actor = event.actors?.[0];
+  const timeRange = `${fmt(occurrence.start, timeZone)} – ${fmt(occurrence.end, timeZone)}`;
 
   return (
     <button
       type="button"
       onClick={interactive ? () => onEventClick(occurrence) : undefined}
       disabled={!interactive}
+      title={`${event.title}\n${timeRange}${event.location ? `\n${event.location}` : ""}`}
       style={{
-        top,
-        height: Math.max(height, 20),
-        left: `calc(${lane * widthPct}% + ${lane === 0 ? 0 : GAP}px)`,
-        width: `calc(${widthPct}% - ${lane === laneCount - 1 ? 0 : GAP}px)`,
+        ...eventStyle(event.color),
+        top: top + 1,
+        height: Math.max(height - 2, 18),
+        left: `calc(${leftPct}% + ${GAP}px)`,
+        width: `calc(${widthPct}% - ${GAP * 2}px)`,
+        zIndex: 10 + lane,
       }}
       className={cn(
-        "group absolute z-10 flex flex-col overflow-hidden rounded-lg border bg-card px-2 py-1 text-left shadow-xs ring-0",
+        "gcal-event gcal-event-bar group absolute flex flex-col overflow-hidden rounded-md py-1 pl-2.5 pr-1.5 text-left",
         "transition-[background-color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        interactive && "cursor-pointer hover:bg-accent hover:shadow-sm",
+        interactive && "cursor-pointer",
       )}
     >
-      <span className="flex items-center gap-1.5">
-        <span
-          aria-hidden
-          className="h-2 w-2 shrink-0 rounded-full bg-primary"
-          style={event.color ? { backgroundColor: event.color } : undefined}
-        />
-        <span className="truncate text-xs font-semibold leading-tight">{event.title}</span>
-      </span>
-
-      {!compact ? (
-        <span className="truncate pl-3.5 text-[0.6875rem] leading-tight text-muted-foreground tabular-nums">
-          {fmt(occurrence.start, timeZone)} – {fmt(occurrence.end, timeZone)}
+      {renderEventContent ? (
+        renderEventContent(occurrence, { surface: "grid", height, timeZone })
+      ) : inline ? (
+        <span className="flex min-w-0 items-baseline gap-1.5 text-xs leading-tight">
+          <span className="truncate font-semibold">{event.title}</span>
+          <span className="gcal-event-subtle shrink-0 text-[0.6875rem] tabular-nums">
+            {fmt(occurrence.start, timeZone)}
+          </span>
         </span>
-      ) : null}
+      ) : (
+        <>
+          <span className="line-clamp-2 text-xs font-semibold leading-snug">{event.title}</span>
+          <span className="gcal-event-subtle mt-0.5 truncate text-[0.6875rem] leading-tight tabular-nums">
+            {timeRange}
+          </span>
+          {event.location && height >= 56 ? (
+            <span className="gcal-event-subtle truncate text-[0.6875rem] leading-tight">{event.location}</span>
+          ) : null}
+        </>
+      )}
 
-      {roomy && event.location ? (
-        <span className="truncate pl-3.5 text-[0.6875rem] leading-tight text-muted-foreground">
-          {event.location}
-        </span>
-      ) : null}
-
-      {roomy && event.actors?.length ? (
-        <span className="mt-auto flex items-center gap-1.5 pt-1">
-          <Avatar className="h-4 w-4">
-            {event.actors[0]!.avatarUrl ? (
-              <AvatarImage src={event.actors[0]!.avatarUrl} alt={event.actors[0]!.name ?? ""} />
-            ) : null}
-            <AvatarFallback className="text-[0.5rem]">{actorInitials(event.actors[0]!)}</AvatarFallback>
+      {!renderEventContent && roomy && actor ? (
+        <span className="mt-auto flex min-w-0 items-center gap-1.5 pt-1">
+          <Avatar className="h-4 w-4 ring-1 ring-card">
+            {actor.avatarUrl ? <AvatarImage src={actor.avatarUrl} alt={actor.name ?? ""} /> : null}
+            <AvatarFallback className="text-[0.5rem]">{actorInitials(actor)}</AvatarFallback>
           </Avatar>
-          {event.actors[0]!.name ? (
-            <span className="truncate text-[0.6875rem] text-muted-foreground">{event.actors[0]!.name}</span>
+          {actor.name ? (
+            <span className="gcal-event-subtle truncate text-[0.6875rem]">{actor.name}</span>
           ) : null}
         </span>
       ) : null}

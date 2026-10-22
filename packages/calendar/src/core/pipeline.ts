@@ -38,7 +38,7 @@ export function buildView<TMeta = Record<string, unknown>>(
   options: BuildViewOptions,
 ): BuildViewResult<TMeta> {
   const { range, grid, timeZone } = options;
-  const occurrences = expandAll(events, range);
+  const occurrences = expandAll(events, range, { allDayZone: timeZone });
 
   const timed: EventOccurrence<TMeta>[] = [];
   const allDay: EventOccurrence<TMeta>[] = [];

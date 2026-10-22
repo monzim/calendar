@@ -201,8 +201,11 @@ export interface EventOccurrence<TMeta = Record<string, unknown>> {
 // View-layer types — produced by the engine for time-grid rendering
 // ===========================================================================
 
-/** Supported view types in v1. `today` = `day` pinned to the current date. */
-export type CalendarViewType = "week" | "day" | "today" | "month";
+/**
+ * Supported view types. `today` = `day` pinned to the current date; `agenda` is
+ * a chronological list of upcoming occurrences grouped by day.
+ */
+export type CalendarViewType = "week" | "day" | "today" | "month" | "agenda";
 
 /** A concrete date range [start, end). */
 export interface DateRange {

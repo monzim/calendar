@@ -19,8 +19,12 @@ const DEFAULT_GRID: GridConfig = { dayStartHour: 8, dayEndHour: 18, pxPerHour: 6
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
 /** Compute the visible [start, end) range for a view anchored at `date`. */
-function rangeFor(view: CalendarViewType, date: Date, weekStartsOn: WeekStart): DateRange {
+function rangeFor(view: CalendarViewType, date: Date, weekStartsOn: WeekStart, agendaDays: number): DateRange {
   switch (view) {
+    case "agenda": {
+      const start = startOfDay(date);
+      return { start, end: addDays(start, agendaDays) };
+    }
     case "day":
     case "today": {
       const start = startOfDay(date);
@@ -50,6 +54,7 @@ export function useCalendar<TMeta = Record<string, unknown>>(
     weekStartsOn = 0,
     visibleDays = ALL_DAYS,
     timeZone,
+    agendaDays = 14,
   } = options;
 
   const grid = useMemo<GridConfig>(() => ({ ...DEFAULT_GRID, ...options.grid }), [options.grid]);
@@ -63,8 +68,8 @@ export function useCalendar<TMeta = Record<string, unknown>>(
   // Compute the range in the display zone so day boundaries line up with the
   // pipeline's bucketing (date-fns on a TZDate operates in that zone).
   const visibleRange = useMemo(
-    () => rangeFor(view, toDisplay(currentDate, timeZone), weekStartsOn),
-    [view, currentDate, weekStartsOn, timeZone],
+    () => rangeFor(view, toDisplay(currentDate, timeZone), weekStartsOn, agendaDays),
+    [view, currentDate, weekStartsOn, timeZone, agendaDays],
   );
 
   const allDays = useMemo<DayBucket<TMeta>[]>(
@@ -89,12 +94,14 @@ export function useCalendar<TMeta = Record<string, unknown>>(
             return addDays(d, dir);
           case "month":
             return addMonths(d, dir);
+          case "agenda":
+            return addDays(d, dir * agendaDays);
           default:
             return addWeeks(d, dir);
         }
       });
     },
-    [view],
+    [view, agendaDays],
   );
 
   const goNext = useCallback(() => step(1), [step]);

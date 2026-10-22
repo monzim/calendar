@@ -12,5 +12,5 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   // Keep peer + runtime deps out of the bundle so consumers dedupe them.
-  external: [/^react/, /^react-dom/, /^@radix-ui\//, "date-fns", "@date-fns/tz", "rrule"],
+  deps: { neverBundle: [/^react/, /^react-dom/, /^@radix-ui\//, "date-fns", "@date-fns/tz", "rrule"] },
 });
