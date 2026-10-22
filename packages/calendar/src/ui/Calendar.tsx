@@ -88,7 +88,7 @@ export function Calendar<TMeta = Record<string, unknown>>(props: CalendarProps<T
   return (
     <div
       className={cn(
-        "gcal-root flex w-full flex-col overflow-hidden rounded-xl border bg-card text-card-foreground",
+        "gcal-root flex w-full flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm",
         className,
       )}
     >

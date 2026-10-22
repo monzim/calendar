@@ -40,31 +40,20 @@ export function CalendarHeader({
   onExport,
 }: CalendarHeaderProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-3 py-2.5 sm:px-4">
-      <div className="flex min-w-0 items-center gap-2">
-        <div className="flex items-center rounded-lg border">
-          <button
-            type="button"
-            onClick={onPrev}
-            aria-label="Previous"
-            className="flex h-8 w-8 items-center justify-center rounded-l-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <span className="h-5 w-px bg-border" />
-          <button
-            type="button"
-            onClick={onNext}
-            aria-label="Next"
-            className="flex h-8 w-8 items-center justify-center rounded-r-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-        <Button variant="outline" size="sm" onClick={onToday} className="hidden sm:inline-flex">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-3 py-3 sm:px-4">
+      <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+        <Button variant="outline" size="sm" onClick={onToday} className="hidden px-3.5 sm:inline-flex">
           Today
         </Button>
-        <h2 className="truncate text-sm font-semibold tracking-tight tabular-nums sm:text-base">
+        <div className="flex items-center">
+          <Button variant="ghost" size="icon" onClick={onPrev} aria-label="Previous" className="rounded-full text-muted-foreground hover:text-foreground">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onNext} aria-label="Next" className="rounded-full text-muted-foreground hover:text-foreground">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <h2 className="truncate text-base font-semibold tracking-tight tabular-nums sm:text-lg">
           {label}
         </h2>
       </div>
@@ -104,7 +93,14 @@ export function CalendarHeader({
         </div>
 
         {onExport ? (
-          <Button variant="ghost" size="icon" onClick={onExport} aria-label="Export .ics" title="Export .ics">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onExport}
+            aria-label="Export .ics"
+            title="Export .ics"
+            className="text-muted-foreground hover:text-foreground"
+          >
             <DownloadIcon className="h-4 w-4" />
           </Button>
         ) : null}

@@ -94,6 +94,7 @@
   text-rendering: optimizeLegibility;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
+.gcal-root,
 .gcal-root *,
 .gcal-root *::before,
 .gcal-root *::after {
@@ -115,4 +116,40 @@
 }
 .gcal-scroll::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/*
+ * Event tint system. Each event block sets `--gcal-event` (its color, or the
+ * primary token by default); fill, accent bar and text are mixed from it so
+ * any hex reads well on both light and dark surfaces.
+ */
+.gcal-root {
+  --gcal-event: hsl(var(--gcal-primary));
+  --gcal-event-fill: 14%;
+  --gcal-event-fill-hover: 22%;
+  --gcal-event-ink: 62%;
+}
+.dark .gcal-root,
+.gcal-root.dark {
+  --gcal-event-fill: 24%;
+  --gcal-event-fill-hover: 32%;
+  --gcal-event-ink: 38%;
+}
+.gcal-event {
+  background-color: color-mix(in oklab, var(--gcal-event) var(--gcal-event-fill), hsl(var(--gcal-card)));
+  color: color-mix(in oklab, var(--gcal-event) var(--gcal-event-ink), hsl(var(--gcal-foreground)));
+}
+.gcal-event-bar {
+  box-shadow:
+    inset 3px 0 0 var(--gcal-event),
+    0 0 0 1px hsl(var(--gcal-card));
+}
+button.gcal-event:not(:disabled):hover {
+  background-color: color-mix(in oklab, var(--gcal-event) var(--gcal-event-fill-hover), hsl(var(--gcal-card)));
+}
+.gcal-event-dot {
+  background-color: var(--gcal-event);
+}
+.gcal-event-subtle {
+  opacity: 0.8;
 }

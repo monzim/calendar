@@ -27,8 +27,8 @@ export function NowIndicator({ now, grid, timeZone }: NowIndicatorProps) {
       className="gcal-now-indicator pointer-events-none absolute inset-x-0 z-20 flex items-center"
       style={{ top }}
     >
-      <span className="-ml-1 h-2.5 w-2.5 rounded-full bg-destructive shadow-sm" />
-      <span className="h-px w-full bg-destructive/80" />
+      <span className="-ml-[5px] h-2.5 w-2.5 shrink-0 rounded-full bg-destructive ring-2 ring-card" />
+      <span className="h-0.5 w-full bg-destructive" />
     </div>
   );
 }
