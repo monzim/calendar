@@ -146,3 +146,12 @@ describe("Calendar slots and legend", () => {
     expect(html).toContain('aria-label="Print"');
   });
 });
+
+describe("Ask AI", () => {
+  it("is off by default and renders a header menu when enabled", () => {
+    const off = renderToStaticMarkup(<Calendar events={events} timeZone="UTC" defaultDate={anchor} />);
+    expect(off).not.toContain("Ask AI");
+    const on = renderToStaticMarkup(<Calendar events={events} timeZone="UTC" defaultDate={anchor} ai />);
+    expect(on).toContain("Ask AI");
+  });
+});

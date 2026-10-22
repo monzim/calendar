@@ -1,6 +1,6 @@
 "use client";
 
-export { Calendar, type CalendarProps } from "./Calendar";
+export { Calendar, type CalendarProps, type CalendarAIOptions } from "./Calendar";
 export { GoogleCalendarWeekly } from "./GoogleCalendarWeekly";
 
 // Sub-components, exposed for power users composing custom layouts.
@@ -10,12 +10,14 @@ export { EventCard, type EventCardProps } from "./components/EventCard";
 export { EventDialog, type EventDialogProps } from "./components/EventDialog";
 export { NowIndicator, type NowIndicatorProps } from "./components/NowIndicator";
 export { MonthView, type MonthViewProps } from "./views/MonthView";
+export { AskAIMenu, type AskAIMenuProps } from "./components/AskAIMenu";
 export { AgendaView, type AgendaViewProps } from "./views/AgendaView";
 export { CalendarLegend, type CalendarLegendProps } from "./components/CalendarLegend";
 
 // Helpers for custom rendering and printing.
 export type { EventContentRenderer, EventRenderContext } from "./lib/render";
 export { printCalendar } from "./lib/print";
+export { copyText } from "./lib/clipboard";
 
 // Vendored shadcn primitives.
 export { Avatar, AvatarImage, AvatarFallback } from "./primitives/avatar";

@@ -13,12 +13,21 @@ import type {
   TimeZone,
 } from "../core/types";
 import type { GroupBy } from "../core/filter";
+import {
+  AI_PROVIDERS,
+  DEFAULT_EVENT_AI_INSTRUCTIONS,
+  buildAIPrompt,
+  daysToMarkdown,
+  eventToMarkdown,
+  type AIProvider,
+} from "../core/ai";
 import type { ICSFeed } from "../core/feeds";
 import { useCalendar } from "../react/useCalendar";
 import { useEventFilter } from "../react/useEventFilter";
 import { useICSFeed, type UseICSFeedOptions } from "../react/useICSFeed";
 import { useNow } from "../react/useNow";
 import type { UseCalendarOptions } from "../react/types";
+import { AskAIMenu } from "./components/AskAIMenu";
 import { CalendarHeader } from "./components/CalendarHeader";
 import { CalendarLegend } from "./components/CalendarLegend";
 import { TimeGrid } from "./components/TimeGrid";
@@ -28,6 +37,22 @@ import { MonthView } from "./views/MonthView";
 import { cn } from "./lib/cn";
 import { printCalendar } from "./lib/print";
 import type { EventContentRenderer } from "./lib/render";
+
+/** Options for the "Ask AI" menu. */
+export interface CalendarAIOptions {
+  /** Chat apps to offer. Default ChatGPT + Claude. Pass `[]` for copy-only. */
+  providers?: AIProvider[];
+  /** Instructions placed before the schedule. */
+  instructions?: string;
+  /** Instructions placed before a single event (dialog menu). */
+  eventInstructions?: string;
+  /** Include event descriptions in the prompt. Default true. */
+  includeDescriptions?: boolean;
+  /** Include people's names/roles (never emails). Default true. */
+  includePeople?: boolean;
+}
+
+const DEFAULT_AI_PROVIDERS: AIProvider[] = [AI_PROVIDERS.chatgpt, AI_PROVIDERS.claude];
 
 export interface CalendarProps<TMeta = Record<string, unknown>>
   extends UseCalendarOptions<TMeta> {
@@ -67,6 +92,13 @@ export interface CalendarProps<TMeta = Record<string, unknown>>
   renderEventDialog?: (occurrence: EventOccurrence<TMeta>, helpers: { close: () => void }) => ReactNode;
   /** Extra controls in the header, before the print / export buttons. */
   headerActions?: ReactNode;
+
+  /**
+   * "Ask AI" menus in the header (the visible range) and the event dialog: copy
+   * as Markdown, or open ChatGPT / Claude prefilled. Off by default because using
+   * it sends calendar data to a third party; ids, URLs and emails are never included.
+   */
+  ai?: boolean | CalendarAIOptions;
 }
 
 const DEFAULT_VIEWS: CalendarViewType[] = ["today", "day", "week", "month", "agenda"];
@@ -106,6 +138,7 @@ export function Calendar<TMeta = Record<string, unknown>>(props: CalendarProps<T
     renderEventDetails,
     renderEventDialog,
     headerActions,
+    ai = false,
     ...calendarOptions
   } = props;
 
@@ -141,6 +174,31 @@ export function Calendar<TMeta = Record<string, unknown>>(props: CalendarProps<T
     : undefined;
   const handlePrint = showPrint ? () => printCalendar(rootRef.current) : undefined;
 
+  const aiOptions: CalendarAIOptions | null = ai === false ? null : ai === true ? {} : ai;
+  const aiProviders = aiOptions?.providers ?? DEFAULT_AI_PROVIDERS;
+  const markdownOptions = {
+    timeZone: cal.timeZone,
+    now,
+    includeDescriptions: aiOptions?.includeDescriptions,
+    includePeople: aiOptions?.includePeople,
+  };
+  const aiMenu = aiOptions ? (
+    <AskAIMenu
+      providers={aiProviders}
+      getPrompt={() =>
+        buildAIPrompt(daysToMarkdown(cal.days as DayBucket[], markdownOptions), {
+          instructions: aiOptions.instructions,
+        })
+      }
+    />
+  ) : null;
+  const eventAIPrompt = aiOptions
+    ? (occ: EventOccurrence) =>
+        buildAIPrompt(eventToMarkdown(occ, markdownOptions), {
+          instructions: aiOptions.eventInstructions ?? DEFAULT_EVENT_AI_INSTRUCTIONS,
+        })
+    : undefined;
+
   // Built-in details dialog. A consumer `onEventClick` overrides it entirely.
   const [selected, setSelected] = useState<EventOccurrence | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -169,7 +227,14 @@ export function Calendar<TMeta = Record<string, unknown>>(props: CalendarProps<T
         onToday={cal.goToday}
         onExport={handleExport}
         onPrint={handlePrint}
-        actions={headerActions}
+        actions={
+          headerActions || aiMenu ? (
+            <>
+              {headerActions}
+              {aiMenu}
+            </>
+          ) : undefined
+        }
       />
 
       {legend !== false ? (
@@ -219,6 +284,8 @@ export function Calendar<TMeta = Record<string, unknown>>(props: CalendarProps<T
           timeZone={cal.timeZone}
           renderDetails={renderEventDetails as EventDialogProps["renderDetails"]}
           renderContent={renderEventDialog as EventDialogProps["renderContent"]}
+          aiPrompt={eventAIPrompt}
+          aiProviders={aiProviders}
         />
       )}
     </div>

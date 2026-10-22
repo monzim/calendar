@@ -51,6 +51,21 @@ export {
 // Remote feeds
 export { fetchICS, normalizeFeedUrl, type ICSFeed, type FetchICSOptions } from "./feeds";
 
+// AI handoff (Markdown schedule + chat deep links)
+export {
+  occurrenceToMarkdown,
+  eventToMarkdown,
+  daysToMarkdown,
+  scheduleToMarkdown,
+  buildAIPrompt,
+  AI_PROVIDERS,
+  DEFAULT_AI_INSTRUCTIONS,
+  DEFAULT_EVENT_AI_INSTRUCTIONS,
+  MAX_AI_URL_LENGTH,
+  type MarkdownOptions,
+  type AIProvider,
+} from "./ai";
+
 // Export / import
 export { toICS, parseICS, downloadICS } from "./ics";
 export { toGoogleCalendarUrl, toOutlookUrl } from "./urls";

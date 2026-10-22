@@ -1,0 +1,15 @@
+# @monzim/calendar
+
+> Routine-native, headless-first React calendar. One generic event model (`CalendarEvent`) feeds day / today / week / month / agenda views, with recurrence (RRULE + exceptions), overlap packing, IANA timezones, a filter legend, remote .ics feeds, printing, custom render slots, an "Ask AI" menu, and one-click export to Google / Apple / Outlook. React 18.3+ / 19, ships its own stylesheet, works with or without Tailwind.
+
+Install with `npm i @monzim/calendar` and import `@monzim/calendar/styles.css` once at the app entry — without it the calendar is unstyled.
+
+## Docs
+
+- [Full guide (README)](https://monzim.github.io/calendar/llms-full.txt): data model, every prop, legend, feeds, custom rendering, printing, AI menu, export/import, theming, and copy-paste rules for coding agents
+- [Live demo](https://monzim.github.io/calendar/): every feature turned on
+- [Source](https://github.com/monzim/calendar)
+
+## Optional
+
+- [npm package](https://www.npmjs.com/package/@monzim/calendar)

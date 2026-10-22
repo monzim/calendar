@@ -18,6 +18,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "../primitives/avatar";
 import { Button } from "../primitives/button";
 import { eventStyle } from "../lib/eventStyle";
+import type { AIProvider } from "../../core/ai";
+import { AskAIMenu } from "./AskAIMenu";
 import { CalendarIcon, ClockIcon, DownloadIcon, ExternalLink, MapPin } from "./icons";
 
 export interface EventDialogProps {
@@ -29,6 +31,9 @@ export interface EventDialogProps {
   renderDetails?: (occurrence: EventOccurrence<any>) => ReactNode;
   /** Replace the whole dialog body. The dialog shell (overlay, close button, a11y title) stays. */
   renderContent?: (occurrence: EventOccurrence<any>, helpers: { close: () => void }) => ReactNode;
+  /** Enables the "Ask AI" menu in the footer: builds the prompt for this occurrence. */
+  aiPrompt?: (occurrence: EventOccurrence<any>) => string;
+  aiProviders?: AIProvider[];
 }
 
 function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
@@ -51,6 +56,8 @@ export function EventDialog({
   timeZone,
   renderDetails,
   renderContent,
+  aiPrompt,
+  aiProviders = [],
 }: EventDialogProps) {
   const event = occurrence?.event as CalendarEvent | undefined;
 
@@ -133,7 +140,11 @@ export function EventDialog({
             </div>
 
             <DialogFooter className="-mx-5 -mb-5 mt-1 items-center border-t bg-muted/40 px-5 py-3 sm:justify-between">
-              <span className="hidden text-xs font-medium text-muted-foreground sm:inline">Add to calendar</span>
+              {aiPrompt ? (
+                <AskAIMenu getPrompt={() => aiPrompt(occurrence)} providers={aiProviders} className="-ml-2" />
+              ) : (
+                <span className="hidden text-xs font-medium text-muted-foreground sm:inline">Add to calendar</span>
+              )}
               <span className="flex flex-col-reverse gap-2 sm:flex-row">
               <Button variant="ghost" size="sm" onClick={() => openUrl(toGoogleCalendarUrl(event))}>
                 <ExternalLink className="h-3.5 w-3.5" />

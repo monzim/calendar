@@ -37,4 +37,4 @@ export type {
 
 // Batteries-included UI
 export { Calendar, GoogleCalendarWeekly, CalendarLegend, printCalendar } from "./ui";
-export type { CalendarProps, EventContentRenderer, EventRenderContext } from "./ui";
+export type { CalendarProps, CalendarAIOptions, EventContentRenderer, EventRenderContext } from "./ui";

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { GoogleCalendarWeekly, fromRoutine, type CalendarEvent, type ICSFeed } from "@monzim/calendar";
+import { AI_PROVIDERS } from "@monzim/calendar/core";
+import { copyText } from "@monzim/calendar/ui";
 import { oneOffEvents, routines, type CourseMeta } from "./demo-data";
 
 const TIME_ZONE = "Asia/Dhaka";
@@ -86,6 +88,64 @@ function InstallPill() {
   );
 }
 
+// Public URL, so chat apps can fetch it (they can't reach localhost in dev).
+const LLMS_FULL_URL = "https://monzim.github.io/calendar/llms-full.txt";
+const AGENT_PROMPT =
+  `I'm building a React app with the @monzim/calendar package. Read its full guide at ${LLMS_FULL_URL} ` +
+  "and follow its rules for coding agents. Then help me integrate it — ask me what I'm building first.";
+
+function UseWithAI() {
+  // Preload the guide so "Copy" can write to the clipboard inside the click.
+  const [guide, setGuide] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}llms-full.txt`)
+      .then((r) => (r.ok ? r.text() : null))
+      .then(setGuide)
+      .catch(() => setGuide(null));
+  }, []);
+
+  const copy = () => {
+    const text = guide
+      ? `You're helping me use the @monzim/calendar React package. Here is its full guide:\n\n${guide}`
+      : AGENT_PROMPT;
+    void copyText(text).then((ok) => {
+      setCopied(ok);
+      if (ok) setTimeout(() => setCopied(false), 1800);
+    });
+  };
+  const open = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
+
+  const button =
+    "inline-flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium shadow-xs transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800";
+
+  return (
+    <section className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:bg-zinc-900/60">
+      <div>
+        <h2 className="text-sm font-semibold">Build with AI</h2>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          Hand the full integration guide to your coding assistant. Also at{" "}
+          <a className="underline underline-offset-2" href={`${import.meta.env.BASE_URL}llms.txt`}>
+            /llms.txt
+          </a>
+          .
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={copy} className={button}>
+          {copied ? "Copied" : "Copy guide for AI"}
+        </button>
+        <button type="button" onClick={() => open(AI_PROVIDERS.chatgpt.url(AGENT_PROMPT))} className={button}>
+          Open in ChatGPT
+        </button>
+        <button type="button" onClick={() => open(AI_PROVIDERS.claude.url(AGENT_PROMPT))} className={button}>
+          Open in Claude
+        </button>
+      </div>
+    </section>
+  );
+}
+
 const FEATURES = [
   { title: "Routine-native", body: "Weekly schedules in, recurring events out — timetables, shifts, clinic hours." },
   { title: "Every view", body: "Today, day, week and month from one event model, with overlap packing." },
@@ -93,6 +153,8 @@ const FEATURES = [
   { title: "Filter legend", body: "Toggle calendars or people on and off. Alt-click a chip to show only that one." },
   { title: "Live .ics feeds", body: "Subscribe to remote calendars; they merge in and refresh on an interval." },
   { title: "Print & render slots", body: "Print a clean landscape timetable, or swap in your own event and dialog UI." },
+  { title: "Ask AI", body: "Copy the visible schedule as Markdown, or open it in ChatGPT or Claude to plan around it." },
+  { title: "Agenda view", body: "A day-grouped list of what's coming up — the best default on phones." },
 ];
 
 export function App() {
@@ -152,9 +214,12 @@ export function App() {
           legend={groupBy}
           feeds={FEEDS}
           renderEventDetails={(occ) => <CourseDetails meta={occ.event.meta} />}
+          ai
         />
 
-        <section className="grid gap-3 sm:grid-cols-3">
+        <UseWithAI />
+
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((f) => (
             <div
               key={f.title}

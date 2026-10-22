@@ -95,6 +95,7 @@ All views are on by default; switch via the header toggle or `defaultView`.
 | `legend` | `false` | filter chips — see [Legend & filtering](#legend--filtering) |
 | `feeds` | — | remote `.ics` subscriptions — see [Remote feeds](#remote-ics-feeds) |
 | `renderEventContent` / `renderEventDetails` / `renderEventDialog` / `headerActions` | — | see [Custom rendering](#custom-rendering) |
+| `ai` | `false` | "Ask AI" menus — see [Ask AI](#ask-ai) |
 
 Overlapping events lane-pack automatically; the now-indicator is hydration-safe (it
 only appears after mount), so the component is SSR-safe on Next / Remix / TanStack Start.
@@ -175,6 +176,34 @@ and legend are left out, a week that slightly overflows is shrunk onto one page,
 agenda paginates without splitting a day. Trigger it yourself with
 `printCalendar(element)` from `@monzim/calendar/ui`.
 
+## Ask AI
+
+`ai` adds an **Ask AI** menu to the header (for the visible range) and to the event
+dialog (for one event): **Copy for AI** puts a clean Markdown schedule on the clipboard,
+and **Open in ChatGPT / Claude** starts a new chat prefilled with it — handy for "when am
+I free on Tuesday?", "do any classes clash?", or "plan my study week".
+
+```tsx
+<Calendar events={events} ai />
+
+<Calendar
+  events={events}
+  ai={{
+    providers: [AI_PROVIDERS.claude],             // default: ChatGPT + Claude; [] = copy only
+    instructions: "You are my study planner.",     // replaces the default preamble
+    includeDescriptions: false,                    // default true
+  }}
+/>
+```
+
+It's **off by default** because using it sends calendar data to a third party. The
+Markdown carries only what's on screen — titles, times, places, people's names and roles —
+never ids, URLs, emails or avatar links. Prompts too long for a URL are copied instead,
+and the chat opens with a note to paste. Bring your own chat app with any
+`{ id, label, url: (prompt) => string }`. The pieces are exported for custom UIs:
+`scheduleToMarkdown`, `daysToMarkdown`, `eventToMarkdown`, `buildAIPrompt`,
+`AI_PROVIDERS` (core) and `AskAIMenu`, `copyText` (ui).
+
 ## Export & import
 
 ```ts
@@ -192,6 +221,11 @@ Apple Calendar has no URL scheme — the `.ics` download opens directly into it 
 macOS/iOS. Outlook's URL scheme has no reliable recurrence; use `.ics` for routines.
 
 ## Using with AI coding agents
+
+The docs are published for agents at
+[`/llms.txt`](https://monzim.github.io/calendar/llms.txt) (index) and
+[`/llms-full.txt`](https://monzim.github.io/calendar/llms-full.txt) (this README), and the
+demo has **Copy guide for AI / Open in ChatGPT / Open in Claude** buttons.
 
 Copy-paste rules for an LLM assistant integrating this package:
 
@@ -221,6 +255,7 @@ Copy-paste rules for an LLM assistant integrating this package:
 10. **Filtering** = `legend` prop (`true` → by `calendarId`, `"actor"`, or a key function).
     **Subscriptions** = `feeds` prop (needs a CORS proxy via `feedOptions.fetch` for most
     public feeds). **Lists** = `defaultView="agenda"`. **Print** = built-in button.
+    **AI handoff** = `ai` prop (opt-in; menus to copy as Markdown / open ChatGPT or Claude).
 
 Minimal, complete, working example:
 

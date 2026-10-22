@@ -93,3 +93,17 @@ export const PrinterIcon = (p: IconProps) => (
     <path d="M6 14h12v8H6z" />
   </svg>
 );
+
+export const SparklesIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M9.9 3.6 11 7l3.4 1.1a.6.6 0 0 1 0 1.1L11 10.4 9.9 13.8a.6.6 0 0 1-1.1 0L7.6 10.4 4.2 9.2a.6.6 0 0 1 0-1.1L7.6 7l1.2-3.4a.6.6 0 0 1 1.1 0Z" />
+    <path d="M18 14v4M16 16h4M17 3v2M16 4h2" />
+  </svg>
+);
+
+export const CopyIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="9" y="9" width="12" height="12" rx="2" />
+    <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+  </svg>
+);
