@@ -1,7 +1,7 @@
 {
   "name": "@monzim/calendar",
   "version": "1.0.0",
-  "description": "Routine-native, headless-first React calendar library. One generic event model → day / today / week / month views, recurrence, and one-click export to Google / Apple / Outlook.",
+  "description": "Routine-native, headless-first React calendar. One event model → day / today / week / month / agenda views, recurrence, timezones, filter legend, .ics feeds, printing, Ask AI, and one-click export to Google / Apple / Outlook.",
   "type": "module",
   "license": "MIT",
   "author": "Azraf Al Monzim",
@@ -20,6 +20,10 @@
     "rrule",
     "ics",
     "week-view",
+    "agenda",
+    "ical",
+    "timetable-print",
+    "ai",
     "shadcn",
     "tailwind"
   ],
@@ -27,7 +31,8 @@
     "**/*.css"
   ],
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
@@ -59,7 +64,8 @@
     "dev": "tsdown --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "lint:pkg": "publint && attw --pack --profile esm-only --exclude-entrypoints ./styles.css"
+    "lint:pkg": "publint && attw --pack --profile esm-only --exclude-entrypoints ./styles.css",
+    "prepack": "cp ../../README.md ../../LICENSE ../../CHANGELOG.md . && pnpm build"
   },
   "peerDependencies": {
     "react": ">=18.3.0 <20.0.0",

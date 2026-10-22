@@ -1,7 +1,7 @@
 # @monzim/calendar
 
 A **routine-native**, headless-first React calendar. One generic event model feeds
-every view — **week / day / today / month** — with correct recurrence, overlap
+every view — **week / day / today / month / agenda** — with correct recurrence, overlap
 lane-packing, timezones, and one-click export to Google / Apple / Outlook.
 
 Unlike event-instance calendars, this one is built around **routines** (a thing that
@@ -10,7 +10,20 @@ clinic hours — while still handling one-off events. Styled with Tailwind token
 drops straight into a modern shadcn app, and ships a self-contained stylesheet so it
 works **without** your Tailwind config too.
 
-**[▶ Live demo](https://monzim.github.io/calendar/)** · [GitHub](https://github.com/monzim/calendar) · MIT
+**[▶ Live demo](https://monzim.github.io/calendar/)** · [GitHub](https://github.com/monzim/calendar) · [Changelog](./CHANGELOG.md) · MIT
+
+### Features
+
+- **Five views** — week, day, today, month and a day-grouped agenda list
+- **Routines first** — weekly timetables in (`fromRoutine`), recurring events out; RRULE + exceptions
+- **Correct time** — IANA timezones, overlap lane-packing, hydration-safe now-line (SSR-ready)
+- **Filter legend** — toggle calendars or people; Alt-click to solo
+- **Remote `.ics` feeds** — subscribe, merge, auto-refresh
+- **Export** — `.ics`, Google and Outlook links; `.ics` import
+- **Print** — a clean landscape timetable of just the calendar
+- **Ask AI** — open the visible schedule in ChatGPT or Claude, prefilled through the link
+- **Make it yours** — render slots for events, dialog and header; CSS-variable theming, dark mode
+- **Agent-friendly docs** — [`llms.txt`](https://monzim.github.io/calendar/llms.txt)
 
 > Successor to the original `GoogleCalendarWeekly` weekly-routine component — now
 > generic, multi-view, recurrence-aware, and publishable. (`<GoogleCalendarWeekly>`
@@ -308,12 +321,15 @@ git clone https://github.com/monzim/calendar.git
 cd calendar
 pnpm install
 pnpm dev          # run the demo (apps/web)
-pnpm test         # engine + hydration tests
-pnpm --filter @monzim/calendar build
+pnpm test         # engine, hook and render tests
+pnpm typecheck
+pnpm build        # the library (JS + types + styles.css)
+pnpm lint:pkg     # publint + are-the-types-wrong
 ```
 
 Monorepo: `packages/calendar` (the library) + `apps/web` (the demo, deployed to
-GitHub Pages at <https://monzim.github.io/calendar/>).
+GitHub Pages at <https://monzim.github.io/calendar/> on every push to `main`, together
+with `llms.txt` / `llms-full.txt`). Requires Node 22+ and pnpm (see `packageManager`).
 
 ## License
 
